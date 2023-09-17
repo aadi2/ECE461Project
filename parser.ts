@@ -1,44 +1,27 @@
 import * as fs from 'fs';
 
-class CommandParser {
-    // Placeholder for your getInfo function to make API calls
-    private async getInfo(urls: string[]): Promise<void> {
-        // Your API call logic here
+export const getInfo = (url: string): void => {
+    // Your logic to handle and process the URL goes here
+    console.log(`Processing URL: ${url}`);
+};
+
+// Check if this module is being run directly (i.e., `node project.js`)
+if (require.main === module) {
+    const filePath = process.argv[2];
+    if (!filePath) {
+        console.error("No file path provided.");
+        process.exit(1);
     }
 
-    public async run(args: string[]): Promise<void> {
-        if (args.length < 3) {
-            console.error('Invalid arguments');
+    // Read the file content
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error(`Error reading the file: ${err}`);
             process.exit(1);
         }
 
-        const command = args[2];
-
-        switch (command) {
-            case 'install':
-                // Your install logic here
-                console.log('7 dependencies installed...');
-                break;
-
-            case 'test':
-                // Your test logic here
-                console.log('9/10 test cases passed. 90% line coverage achieved.');
-                break;
-
-            default:
-                if (fs.existsSync(command)) {
-                    const fileContent = fs.readFileSync(command, 'utf-8');
-                    const urls = fileContent.trim().split('\n');
-
-                    await this.getInfo(urls);
-                } else {
-                    console.error('Invalid command or file not found');
-                    process.exit(1);
-                }
-                break;
-        }
-    }
+        // Split lines and process each URL
+        const urls = data.split('\n').filter(url => url.trim() !== ''); // this will filter out any empty lines
+        urls.forEach(url => getInfo(url));
+    });
 }
-
-const parser = new CommandParser();
-parser.run(process.argv);

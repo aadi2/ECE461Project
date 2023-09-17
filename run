@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# Check the number of arguments provided
+if [ "$#" -lt 1 ]; then
+    echo "Error: No arguments provided."
+    exit 1
+fi
+
+# Parse the command
+COMMAND=$1
+
+# Check which command is being executed
+case $COMMAND in
+    "install")
+        # Check if node and npm are installed
+        if ! command -v node &> /dev/null; then
+            echo "Node is not installed. Please install Node.js first."
+            exit 1
+        fi
+
+        if ! command -v npm &> /dev/null; then
+            echo "npm is not installed. Please install npm first."
+            exit 1
+        fi
+
+        # Install typescript globally
+        npm install -g typescript
+
+        # Install project dependencies
+        npm install
+
+        # Install jest and ts-jest for testing
+        npm install --save-dev jest ts-jest @types/jest
+
+        # Initialize jest configuration
+        npx ts-jest config:init
+
+        echo "Dependencies installed..."
+        ;;
+
+    "test")
+        # Run jest for testing. Ensure that your TypeScript tests are either in a "__tests__" folder or end with ".test.ts".
+        npx jest
+
+        # Note: The output format will depend on your jest configuration and tests. Adjust as necessary.
+        ;;
+    
+    *)
+        # Assuming it's a file, check if it exists
+        if [ -f "$COMMAND" ]; then
+            # Compile and run the TypeScript file (You could have this pre-compiled for performance)
+            tsc parser.ts
+            node parser.js "$COMMAND"
+        else
+            echo "Error: Invalid command or file not found."
+            exit 1
+        fi
+        ;;
+esac
+
+exit 0
