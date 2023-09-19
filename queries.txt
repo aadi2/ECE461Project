@@ -1,0 +1,23 @@
+query {
+  repository(owner:"thenativeweb",name:"timer2"){
+    defaultBranchRef{
+      target{
+        ... on Commit{
+          history(first:1){ #gives the date of the last commmit, need to find difference between current date
+            #responsive maintainer
+            edges{
+              node{
+                committedDate
+              }
+            }
+          }
+        }
+      }
+    }
+    object(expression: "HEAD:README.md") {#gives the readme as text, need to use regex; license
+      ... on Blob {
+        text
+      }
+    }
+  }
+}
