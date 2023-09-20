@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import axios from 'axios';
 import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck } from './algo'; // Import functions from algo.ts
+import { getInfo, processUrls } from './parser';
 
 // Read GraphQL queries from queries.txt
 const queries = fs.readFileSync('queries.txt', 'utf8');
@@ -16,6 +17,7 @@ const headers = {
   Authorization: `Bearer ${githubToken}`,
 };
 
+const repoUrl = (processUrls as any).repoUrl;
 // Send the GraphQL query
 async function sendQuery() {
   try {
@@ -30,7 +32,7 @@ async function sendQuery() {
 
     // Process the data using your algo functions
     const busFactorResult = await calculateBusFactor(
-      'REPO_URL', // Replace with the actual repository URL
+      repoUrl, // Replace with the actual repository URL
       'LOCAL_DIRECTORY' // Replace with the local directory path
     );
 
