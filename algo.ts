@@ -5,7 +5,7 @@ interface Contributor {
   commitCount: number;
 }
 
-async function calculateBusFactor(repositoryUrl: string, localDirectory: string, topContributorsCount: number = 3): Promise<Contributor[]> {
+export async function calculateBusFactor(repositoryUrl: string, localDirectory: string, topContributorsCount: number = 3): Promise<Contributor[]> {
   // Initialize SimpleGit
   const git: SimpleGit = simpleGit();
 
@@ -50,11 +50,11 @@ async function calculateBusFactor(repositoryUrl: string, localDirectory: string,
   }
 }
 
-function netScore(ls: number, bf: number, rm: number, cs: number, ru: number) {
+export function netScore(ls: number, bf: number, rm: number, cs: number, ru: number) {
     return (ls * (bf * .3 + rm * .3 + cs * .2 + ru * .2));
 }
 
-function responsiveMaintainer(date:number) {
+export function responsiveMaintainer(date:number) {
     // Calculate the number of days since the last publish
     const currentDate = new Date();
     const lastPublishDate = new Date(date);
@@ -67,7 +67,7 @@ function responsiveMaintainer(date:number) {
     return 0;
 }
 
-function RampUp(weekly:number){
+export function RampUp(weekly:number){
     let score: number = weekly/100000000;
     if(score < 1) {
         return score;
@@ -75,7 +75,7 @@ function RampUp(weekly:number){
     return 1;
 }
 
-function licenseCheck(readmeContent: string): number {
+export function licenseCheck(readmeContent: string): number {
     // Use regex to parse the project readme and check for the required license
     const licenseRegex = /GNU Lesser General Public License v2\.1/;
     const hasLicense = licenseRegex.test(readmeContent);
