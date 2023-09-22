@@ -38,6 +38,14 @@ case $COMMAND in
         echo "Dependencies installed..."
         ;;
 
+    "fetchGitHubInfo")
+    # Compile TypeScript code
+    tsc fetchGitHubInfo.ts
+
+    # Assuming $2 contains the filename to be parsed
+    node fetchGitHubInfo.js "$2"
+    ;;
+    
     "test")
         # Run jest for testing. Ensure that your TypeScript tests are either in a "__tests__" folder or end with ".test.ts".
         npx jest
