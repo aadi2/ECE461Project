@@ -69,22 +69,22 @@ function createOrClearDirectory(directoryPath) {
 }
 // Create or clear the local repository directory
 createOrClearDirectory(localRepositoryDirectory);
+var repoUrl = 'https://github.com/krahets/hello-algo';
+var _a = parseGitHubUrl(repoUrl), owner = _a.owner, repoName = _a.repoName;
 // Read GraphQL queries from queries.txt
-var queries = fs.readFileSync('queries.txt', 'utf8');
+var queries = "\n  query {\n    repository(owner:\"".concat(owner, "\",name:\"").concat(repoName, "\"){\n      defaultBranchRef{\n        target{\n          ... on Commit{\n            history(first:1){\n              edges{\n                node{\n                  committedDate\n                }\n              }\n            }\n          }\n        }\n      }\n      object(expression: \"HEAD:README.md\") {\n        ... on Blob {\n          text\n        }\n      }\n    }\n  }\n");
 // Define your GitHub Personal Access Token
-var githubToken = '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'; // Replace with your GitHub token
+var githubToken = ' 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 '; // Replace with your GitHub token
 // Define the GraphQL endpoint URL
 var graphqlEndpoint = 'https://api.github.com/graphql';
 // Define headers with the authorization token
 var headers = {
     Authorization: "Bearer ".concat(githubToken),
 };
-var repoUrl = 'https://github.com/cloudinary/cloudinary_npm';
-console.log('URL:', repoUrl);
 // Function to fetch the number of weekly commits and other required data
 function fetchDataAndCalculateScore(url) {
     return __awaiter(this, void 0, void 0, function () {
-        var response, data, lastCommitDate, readmeText, oneWeekAgo, weeklyCommitCount, _i, _a, commit, commitDate, issues, correctnessScore, busFactorResult, responsiveMaintainerResult, licenseCheckResult, netScoreResult, error_1;
+        var response, data, lastCommitDate, readmeText, oneWeekAgo, weeklyCommitCount, _i, _a, commit, commitDate, rampUpResult, issues, correctnessScore, busFactorResult, responsiveMaintainerResult, licenseCheckResult, netScoreResult, error_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -94,6 +94,7 @@ function fetchDataAndCalculateScore(url) {
                     response = _b.sent();
                     data = response.data.data;
                     lastCommitDate = new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate);
+                    console.log(lastCommitDate);
                     readmeText = data.repository.object.text;
                     oneWeekAgo = new Date();
                     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -109,6 +110,7 @@ function fetchDataAndCalculateScore(url) {
                             break;
                         }
                     }
+                    rampUpResult = (0, algo_1.RampUp)(weeklyCommitCount);
                     return [4 /*yield*/, fetchAndProcessIssues(repoUrl)];
                 case 2:
                     issues = _b.sent();
@@ -120,10 +122,13 @@ function fetchDataAndCalculateScore(url) {
                     busFactorResult = _b.sent();
                     responsiveMaintainerResult = (0, algo_1.responsiveMaintainer)(lastCommitDate.getTime());
                     licenseCheckResult = (0, algo_1.licenseCheck)(readmeText);
-                    netScoreResult = (0, algo_1.netScore)(licenseCheckResult, busFactorResult.length, responsiveMaintainerResult, correctnessScore, // Include the correctness score
-                    weeklyCommitCount // Use the retrieved weeklyCommits value
+                    netScoreResult = (0, algo_1.netScore)(licenseCheckResult, busFactorResult, responsiveMaintainerResult, correctnessScore, // Include the correctness score
+                    rampUpResult // Use the retrieved weeklyCommits value
                     );
                     // Print the results or perform further processing
+                    console.log('URL:', url);
+                    console.log('Ramp Up', rampUpResult);
+                    console.log('Correctness Score', correctnessScore);
                     console.log('Bus Factor:', busFactorResult);
                     console.log('Responsive Maintainer:', responsiveMaintainerResult);
                     console.log('License Check:', licenseCheckResult);
@@ -139,6 +144,7 @@ function fetchDataAndCalculateScore(url) {
     });
 }
 // Call the fetchDataAndCalculateScore function to initiate the integration
+// Call the fetchDataAndCalculateScore function to initiate the integration
 var filePath = process.argv[2];
 if (!filePath) {
     console.error("No file path provided.");
@@ -146,6 +152,7 @@ if (!filePath) {
 }
 (0, parser_1.processUrls)(filePath).then(function (urls) {
     urls.forEach(function (url) {
+        console.log("Processing URL: ".concat(url));
         fetchDataAndCalculateScore(url);
     });
 }).catch(function (error) {
@@ -154,15 +161,15 @@ if (!filePath) {
 // Define a function to fetch and process issues data from the repository
 function fetchAndProcessIssues(repositoryUrl) {
     return __awaiter(this, void 0, void 0, function () {
-        var parts, owner, repo, response, issues, error_2;
+        var parts, owner_1, repo, response, issues, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
                     parts = repositoryUrl.split('/');
-                    owner = parts[parts.length - 2];
+                    owner_1 = parts[parts.length - 2];
                     repo = parts[parts.length - 1];
-                    return [4 /*yield*/, axios_1.default.get("https://api.github.com/repos/".concat(owner, "/").concat(repo, "/issues"))];
+                    return [4 /*yield*/, axios_1.default.get("https://api.github.com/repos/".concat(owner_1, "/").concat(repo, "/issues"))];
                 case 1:
                     response = _a.sent();
                     issues = response.data.map(function (issue) { return ({
@@ -178,4 +185,17 @@ function fetchAndProcessIssues(repositoryUrl) {
             }
         });
     });
+}
+function parseGitHubUrl(url) {
+    var githubRegex = /github\.com\/([^/]+)\/([^/]+)/;
+    var match = url.match(githubRegex);
+    if (match && match.length === 3) {
+        var owner_2 = match[1];
+        var repoName_1 = match[2];
+        return { owner: owner_2, repoName: repoName_1 };
+    }
+    else {
+        console.error('Invalid GitHub URL');
+        return null;
+    }
 }

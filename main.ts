@@ -62,7 +62,7 @@ const queries = `
   }
 `;
 // Define your GitHub Personal Access Token
-const githubToken = ' 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 '; // Replace with your GitHub token
+const githubToken = ' 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 '; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -74,7 +74,7 @@ const headers = {
 
 
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore() {
+async function fetchDataAndCalculateScore(url : string) {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -133,6 +133,7 @@ async function fetchDataAndCalculateScore() {
     );
 
     // Print the results or perform further processing
+    console.log('URL:', url);
     console.log('Ramp Up', rampUpResult);
     console.log('Correctness Score', correctnessScore);
     console.log('Bus Factor:', busFactorResult);
@@ -154,6 +155,7 @@ if (!filePath) {
 }
 processUrls(filePath).then(urls => {
   urls.forEach(url => {
+      console.log(`Processing URL: ${url}`);
       fetchDataAndCalculateScore(url);
   });
 }).catch(error => {
