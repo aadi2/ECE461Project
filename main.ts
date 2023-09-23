@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
-import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore } from './algo';
+import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore, RampUp } from './algo';
 import { getInfo, processUrls } from './parser';
 import simpleGit, { SimpleGit, LogResult, DefaultLogFields } from 'simple-git';
 
@@ -33,12 +33,36 @@ function createOrClearDirectory(directoryPath: string) {
 
 // Create or clear the local repository directory
 createOrClearDirectory(localRepositoryDirectory);
+const repoUrl = 'https://github.com/krahets/hello-algo';
 
+const { owner, repoName } = parseGitHubUrl(repoUrl);
 // Read GraphQL queries from queries.txt
-const queries = fs.readFileSync('queries.txt', 'utf8');
-
+const queries = `
+  query {
+    repository(owner:"${owner}",name:"${repoName}"){
+      defaultBranchRef{
+        target{
+          ... on Commit{
+            history(first:1){
+              edges{
+                node{
+                  committedDate
+                }
+              }
+            }
+          }
+        }
+      }
+      object(expression: "HEAD:README.md") {
+        ... on Blob {
+          text
+        }
+      }
+    }
+  }
+`;
 // Define your GitHub Personal Access Token
-const githubToken = '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'; // Replace with your GitHub token
+const githubToken = ' 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 '; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -48,8 +72,9 @@ const headers = {
   Authorization: `Bearer ${githubToken}`,
 };
 
+
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore(url: string) {
+async function fetchDataAndCalculateScore() {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -61,6 +86,7 @@ async function fetchDataAndCalculateScore(url: string) {
 
     // Extract the necessary data from the GraphQL response
     const lastCommitDate = new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate);
+    console.log(lastCommitDate);
     const readmeText = data.repository.object.text;
 
     // Calculate the date one week ago from the current date
@@ -79,12 +105,12 @@ async function fetchDataAndCalculateScore(url: string) {
       }
     }
 
+    const rampUpResult = RampUp(weeklyCommitCount);
     // Fetch and process issues data
     const issues = await fetchAndProcessIssues(repoUrl);
 
     // Calculate the "correctness" score
     const correctnessScore = calculateCorrectnessScore(issues);
-
     // Process the data using your algo functions
     const busFactorResult = await calculateBusFactor(
       repoUrl, // Replace with the actual repository URL
@@ -100,13 +126,15 @@ async function fetchDataAndCalculateScore(url: string) {
     // Calculate the net score using your netScore function
     const netScoreResult = netScore(
       licenseCheckResult,
-      busFactorResult.length,
+      busFactorResult,
       responsiveMaintainerResult,
       correctnessScore, // Include the correctness score
-      weeklyCommitCount // Use the retrieved weeklyCommits value
+      rampUpResult // Use the retrieved weeklyCommits value
     );
 
     // Print the results or perform further processing
+    console.log('Ramp Up', rampUpResult);
+    console.log('Correctness Score', correctnessScore);
     console.log('Bus Factor:', busFactorResult);
     console.log('Responsive Maintainer:', responsiveMaintainerResult);
     console.log('License Check:', licenseCheckResult);
@@ -117,6 +145,7 @@ async function fetchDataAndCalculateScore(url: string) {
   }
 }
 
+// Call the fetchDataAndCalculateScore function to initiate the integration
 // Call the fetchDataAndCalculateScore function to initiate the integration
 const filePath = process.argv[2];
 if (!filePath) {
@@ -130,6 +159,7 @@ processUrls(filePath).then(urls => {
 }).catch(error => {
   console.error('Error processing URLs:', error);
 });
+
 
 // Define a function to fetch and process issues data from the repository
 async function fetchAndProcessIssues(repositoryUrl: string) {
@@ -152,5 +182,19 @@ async function fetchAndProcessIssues(repositoryUrl: string) {
   } catch (error) {
     console.error('Error fetching or processing issues:', error);
     return []; // Return an empty array in case of an error
+  }
+}
+
+function parseGitHubUrl(url) {
+  const githubRegex = /github\.com\/([^/]+)\/([^/]+)/;
+  const match = url.match(githubRegex);
+
+  if (match && match.length === 3) {
+    const owner = match[1];
+    const repoName = match[2];
+    return { owner, repoName };
+  } else {
+    console.error('Invalid GitHub URL');
+    return null;
   }
 }
