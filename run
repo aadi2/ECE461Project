@@ -27,6 +27,7 @@ case $COMMAND in
 
         # Install typescript globally
         npm install -g typescript
+        npm install simple-git
 
         # Install project dependencies
         npm install
@@ -63,14 +64,14 @@ case $COMMAND in
         fi
 
         # Compile the TypeScript file and check for errors
-        tsc parser.ts
+        tsc main.ts
         if [ $? -ne 0 ]; then
             echo "Error: Compilation failed."
             exit 1
         fi
 
         # Run the compiled JavaScript file
-        node parser.js "$COMMAND"
+        node main.js "$COMMAND"
         echo "Successfully compiled parser.ts to parser.js"
         ;;
 esac
