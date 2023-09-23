@@ -14,7 +14,8 @@ const localRepositoryDirectory = path.join(__dirname, localRepositorySubdirector
 const queries = fs.readFileSync('queries.txt', 'utf8');
 
 // Define your GitHub Personal Access Token
-const githubToken = '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'; // Replace with your GitHub token
+
+const githubToken = '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'; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';

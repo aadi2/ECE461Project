@@ -14,7 +14,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+        while (_) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 var fs = require("fs");
 var path = require("path");
 var axios_1 = require("axios");
@@ -48,12 +48,12 @@ var localRepositoryDirectory = path.join(__dirname, localRepositorySubdirectory)
 // Read GraphQL queries from queries.txt
 var queries = fs.readFileSync('queries.txt', 'utf8');
 // Define your GitHub Personal Access Token
-var githubToken = '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'; // Replace with your GitHub token
+var githubToken = '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'; // Replace with your GitHub token
 // Define the GraphQL endpoint URL
 var graphqlEndpoint = 'https://api.github.com/graphql';
 // Define headers with the authorization token
 var headers = {
-    Authorization: "Bearer ".concat(githubToken),
+    Authorization: "Bearer ".concat(githubToken)
 };
 // Function to fetch the number of weekly commits and other required data
 function fetchDataAndCalculateScore(repoUrl) {
@@ -63,7 +63,7 @@ function fetchDataAndCalculateScore(repoUrl) {
             switch (_b.label) {
                 case 0:
                     _b.trys.push([0, 4, , 5]);
-                    return [4 /*yield*/, axios_1.default.post(graphqlEndpoint, { query: queries }, { headers: headers })];
+                    return [4 /*yield*/, axios_1["default"].post(graphqlEndpoint, { query: queries }, { headers: headers })];
                 case 1:
                     response = _b.sent();
                     data = response.data.data;
@@ -137,12 +137,12 @@ function fetchAndProcessIssues(repositoryUrl) {
                     parts = repositoryUrl.split('/');
                     owner = parts[parts.length - 2];
                     repo = parts[parts.length - 1];
-                    return [4 /*yield*/, axios_1.default.get("https://api.github.com/repos/".concat(owner, "/").concat(repo, "/issues"))];
+                    return [4 /*yield*/, axios_1["default"].get("https://api.github.com/repos/".concat(owner, "/").concat(repo, "/issues"))];
                 case 1:
                     response = _a.sent();
                     issues = response.data.map(function (issue) { return ({
                         isBug: issue.labels.some(function (label) { return label.name === 'bug'; }),
-                        status: issue.state,
+                        status: issue.state
                     }); });
                     return [2 /*return*/, issues];
                 case 2:
