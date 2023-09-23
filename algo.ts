@@ -12,16 +12,14 @@ interface Issue {
 
 export async function calculateBusFactor(repositoryUrl: string, localDirectory: string, topContributorsCount: number = 3): Promise<Contributor[]> {
   // Initialize SimpleGit
-  const git: SimpleGit = simpleGit();
+  const git: SimpleGit = simpleGit({ baseDir: localDirectory });
 
   try {
     // Clone the Git repository
     await git.clone(repositoryUrl, localDirectory);
     console.log('Repository cloned successfully.');
-
     // Get the list of commit log lines
     const log: LogResult<DefaultLogFields> = await git.log();
-
     // Create a map to store commit counts per contributor
     const commitCounts = new Map<string, number>();
 
