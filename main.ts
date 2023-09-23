@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
-import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck } from './algo';
+import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore } from './algo';
 import { getInfo, processUrls } from './parser';
 
 // Determine the subdirectory name for storing cloned repositories
@@ -14,7 +14,7 @@ const localRepositoryDirectory = path.join(__dirname, localRepositorySubdirector
 const queries = fs.readFileSync('queries.txt', 'utf8');
 
 // Define your GitHub Personal Access Token
-const githubToken = process.env.GITHUB_TOKEN; // Use environment variable for security
+const githubToken = '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'; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -23,6 +23,8 @@ const graphqlEndpoint = 'https://api.github.com/graphql';
 const headers = {
   Authorization: `Bearer ${githubToken}`,
 };
+
+const repoUrl = (processUrls as any).repoUrl;
 
 // Function to fetch the number of weekly commits and other required data
 async function fetchDataAndCalculateScore() {
@@ -55,6 +57,12 @@ async function fetchDataAndCalculateScore() {
       }
     }
 
+    // Fetch and process issues data
+    const issues = await fetchAndProcessIssues(repoUrl);
+
+    // Calculate the "correctness" score
+    const correctnessScore = calculateCorrectnessScore(issues);
+
     // Process the data using your algo functions
     const busFactorResult = await calculateBusFactor(
       repoUrl, // Replace with the actual repository URL
@@ -69,10 +77,10 @@ async function fetchDataAndCalculateScore() {
 
     // Calculate the net score using your netScore function
     const netScoreResult = netScore(
-      busFactorResult.length,
+      licenseCheckResult,
       busFactorResult.length,
       responsiveMaintainerResult,
-      licenseCheckResult,
+      correctnessScore, // Include the correctness score
       weeklyCommitCount // Use the retrieved weeklyCommits value
     );
 
@@ -89,3 +97,27 @@ async function fetchDataAndCalculateScore() {
 
 // Call the fetchDataAndCalculateScore function to initiate the integration
 fetchDataAndCalculateScore();
+
+// Define a function to fetch and process issues data from the repository
+async function fetchAndProcessIssues(repositoryUrl: string) {
+  try {
+    // Assuming your GitHub repository URL is in the format "https://github.com/owner/repo"
+    const parts = repositoryUrl.split('/');
+    const owner = parts[parts.length - 2];
+    const repo = parts[parts.length - 1];
+
+    // Fetch issues from the GitHub REST API
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues`);
+
+    // Process the issues and return an array of Issue objects
+    const issues = response.data.map((issue: any) => ({
+      isBug: issue.labels.some((label: any) => label.name === 'bug'),
+      status: issue.state,
+    }));
+
+    return issues;
+  } catch (error) {
+    console.error('Error fetching or processing issues:', error);
+    return []; // Return an empty array in case of an error
+  }
+}

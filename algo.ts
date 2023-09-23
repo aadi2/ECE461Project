@@ -5,6 +5,11 @@ interface Contributor {
   commitCount: number;
 }
 
+interface Issue {
+  isBug: boolean;
+  status: string;
+}
+
 export async function calculateBusFactor(repositoryUrl: string, localDirectory: string, topContributorsCount: number = 3): Promise<Contributor[]> {
   // Initialize SimpleGit
   const git: SimpleGit = simpleGit();
@@ -51,38 +56,48 @@ export async function calculateBusFactor(repositoryUrl: string, localDirectory: 
 }
 
 export function netScore(ls: number, bf: number, rm: number, cs: number, ru: number) {
-    return (ls * (bf * .3 + rm * .3 + cs * .2 + ru * .2));
+  return (ls * (bf * 0.3 + rm * 0.3 + cs * 0.1 + ru * 0.2)); // Adjust the weights as needed
 }
 
-export function responsiveMaintainer(date:number) {
-    // Calculate the number of days since the last publish
-    const currentDate = new Date();
-    const lastPublishDate = new Date(date);
-    const daysSinceLastPublish = Math.floor((currentDate.getTime() - lastPublishDate.getTime()) / (1000 * 60 * 60 * 24));
+export function responsiveMaintainer(date: number) {
+  // Calculate the number of days since the last publish
+  const currentDate = new Date();
+  const lastPublishDate = new Date(date);
+  const daysSinceLastPublish = Math.floor((currentDate.getTime() - lastPublishDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    let resp: number = 1 - (daysSinceLastPublish / 365);
-    if (resp > 0) {
-        return resp;
-    }
-    return 0;
+  let resp: number = 1 - (daysSinceLastPublish / 365);
+  if (resp > 0) {
+    return resp;
+  }
+  return 0;
 }
 
-export function RampUp(weekly:number){
-    let score: number = weekly/100000000;
-    if(score < 1) {
-        return score;
-    }
-    return 1;
+export function RampUp(weekly: number) {
+  let score: number = weekly / 100000000;
+  if (score < 1) {
+    return score;
+  }
+  return 1;
 }
 
 export function licenseCheck(readmeContent: string): number {
-    // Use regex to parse the project readme and check for the required license
-    const licenseRegex = /GNU Lesser General Public License v2\.1/;
-    const hasLicense = licenseRegex.test(readmeContent);
-  
-    // Return a score of 1 if the license matches, 0 otherwise
-    return hasLicense ? 1 : 0;
+  // Use regex to parse the project readme and check for the required license
+  const licenseRegex = /GNU Lesser General Public License v2\.1/;
+  const hasLicense = licenseRegex.test(readmeContent);
+
+  // Return a score of 1 if the license matches, 0 otherwise
+  return hasLicense ? 1 : 0;
 }
 
+export function calculateCorrectnessScore(issues: Issue[]): number {
+  // Implement your logic to calculate the "correctness" score based on issues
+  // For example, you can count open bugs and calculate a score
+  const openBugs = issues.filter((issue) => issue.isBug && issue.status === 'open').length;
+  const totalBugs = issues.filter((issue) => issue.isBug).length;
 
-//TODO:Correctness
+  // Calculate the correctness score as the ratio of open bugs to total bugs
+  if (totalBugs === 0) {
+    return 1; // If there are no bugs, consider it perfect
+  }
+  return 1 - openBugs / totalBugs;
+}
