@@ -14,7 +14,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var path = require("path");
 var axios_1 = require("axios");
@@ -45,25 +45,51 @@ var parser_1 = require("./parser");
 var localRepositorySubdirectory = 'cloned_repositories';
 // Construct the full path to the local repository directory
 var localRepositoryDirectory = path.join(__dirname, localRepositorySubdirectory);
+// Function to create or clear a directory
+function createOrClearDirectory(directoryPath) {
+    if (fs.existsSync(directoryPath)) {
+        var files = fs.readdirSync(directoryPath);
+        for (var _i = 0, files_1 = files; _i < files_1.length; _i++) {
+            var file = files_1[_i];
+            var filePath_1 = path.join(directoryPath, file);
+            if (fs.lstatSync(filePath_1).isDirectory()) {
+                // Recursively remove directories
+                createOrClearDirectory(filePath_1);
+                fs.rmdirSync(filePath_1);
+            }
+            else {
+                // Delete files
+                fs.unlinkSync(filePath_1);
+            }
+        }
+    }
+    else {
+        fs.mkdirSync(directoryPath, { recursive: true });
+    }
+}
+// Create or clear the local repository directory
+createOrClearDirectory(localRepositoryDirectory);
 // Read GraphQL queries from queries.txt
 var queries = fs.readFileSync('queries.txt', 'utf8');
 // Define your GitHub Personal Access Token
-var githubToken = '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'; // Replace with your GitHub token
+var githubToken = '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'; // Replace with your GitHub token
 // Define the GraphQL endpoint URL
 var graphqlEndpoint = 'https://api.github.com/graphql';
 // Define headers with the authorization token
 var headers = {
-    Authorization: "Bearer ".concat(githubToken)
+    Authorization: "Bearer ".concat(githubToken),
 };
+var repoUrl = 'https://github.com/cloudinary/cloudinary_npm';
+console.log('URL:', repoUrl);
 // Function to fetch the number of weekly commits and other required data
-function fetchDataAndCalculateScore(repoUrl) {
+function fetchDataAndCalculateScore(url) {
     return __awaiter(this, void 0, void 0, function () {
         var response, data, lastCommitDate, readmeText, oneWeekAgo, weeklyCommitCount, _i, _a, commit, commitDate, issues, correctnessScore, busFactorResult, responsiveMaintainerResult, licenseCheckResult, netScoreResult, error_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     _b.trys.push([0, 4, , 5]);
-                    return [4 /*yield*/, axios_1["default"].post(graphqlEndpoint, { query: queries }, { headers: headers })];
+                    return [4 /*yield*/, axios_1.default.post(graphqlEndpoint, { query: queries }, { headers: headers })];
                 case 1:
                     response = _b.sent();
                     data = response.data.data;
@@ -112,13 +138,12 @@ function fetchDataAndCalculateScore(repoUrl) {
         });
     });
 }
-//process the file
+// Call the fetchDataAndCalculateScore function to initiate the integration
 var filePath = process.argv[2];
 if (!filePath) {
     console.error("No file path provided.");
     process.exit(1);
 }
-// Call the fetchDataAndCalculateScore function to initiate the integration for each of the urls
 (0, parser_1.processUrls)(filePath).then(function (urls) {
     urls.forEach(function (url) {
         fetchDataAndCalculateScore(url);
@@ -137,12 +162,12 @@ function fetchAndProcessIssues(repositoryUrl) {
                     parts = repositoryUrl.split('/');
                     owner = parts[parts.length - 2];
                     repo = parts[parts.length - 1];
-                    return [4 /*yield*/, axios_1["default"].get("https://api.github.com/repos/".concat(owner, "/").concat(repo, "/issues"))];
+                    return [4 /*yield*/, axios_1.default.get("https://api.github.com/repos/".concat(owner, "/").concat(repo, "/issues"))];
                 case 1:
                     response = _a.sent();
                     issues = response.data.map(function (issue) { return ({
                         isBug: issue.labels.some(function (label) { return label.name === 'bug'; }),
-                        status: issue.state
+                        status: issue.state,
                     }); });
                     return [2 /*return*/, issues];
                 case 2:

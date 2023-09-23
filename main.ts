@@ -38,7 +38,7 @@ createOrClearDirectory(localRepositoryDirectory);
 const queries = fs.readFileSync('queries.txt', 'utf8');
 
 // Define your GitHub Personal Access Token
-const githubToken = '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'; // Replace with your GitHub token
+const githubToken = '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'; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -52,7 +52,7 @@ const repoUrl = 'https://github.com/cloudinary/cloudinary_npm';
 console.log('URL:', repoUrl);
 
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore() {
+async function fetchDataAndCalculateScore(url: string) {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -121,7 +121,18 @@ async function fetchDataAndCalculateScore() {
 }
 
 // Call the fetchDataAndCalculateScore function to initiate the integration
-fetchDataAndCalculateScore();
+const filePath = process.argv[2];
+if (!filePath) {
+    console.error("No file path provided.");
+    process.exit(1);
+}
+processUrls(filePath).then(urls => {
+  urls.forEach(url => {
+      fetchDataAndCalculateScore(url);
+  });
+}).catch(error => {
+  console.error('Error processing URLs:', error);
+});
 
 // Define a function to fetch and process issues data from the repository
 async function fetchAndProcessIssues(repositoryUrl: string) {
