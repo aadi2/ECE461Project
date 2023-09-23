@@ -52,7 +52,7 @@ const repoUrl = 'https://github.com/cloudinary/cloudinary_npm';
 console.log('URL:', repoUrl);
 
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore(url: string) {
+async function fetchDataAndCalculateScore() {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -82,12 +82,12 @@ async function fetchDataAndCalculateScore(url: string) {
       }
     }
 
+    const rampUpResult = RampUp(weeklyCommitCount);
     // Fetch and process issues data
     const issues = await fetchAndProcessIssues(repoUrl);
 
     // Calculate the "correctness" score
     const correctnessScore = calculateCorrectnessScore(issues);
-
     // Process the data using your algo functions
     const busFactorResult = await calculateBusFactor(
       repoUrl, // Replace with the actual repository URL
@@ -103,13 +103,15 @@ async function fetchDataAndCalculateScore(url: string) {
     // Calculate the net score using your netScore function
     const netScoreResult = netScore(
       licenseCheckResult,
-      busFactorResult.length,
+      busFactorResult,
       responsiveMaintainerResult,
       correctnessScore, // Include the correctness score
-      weeklyCommitCount // Use the retrieved weeklyCommits value
+      rampUpResult // Use the retrieved weeklyCommits value
     );
 
     // Print the results or perform further processing
+    console.log('Ramp Up', rampUpResult);
+    console.log('Correctness Score', correctnessScore);
     console.log('Bus Factor:', busFactorResult);
     console.log('Responsive Maintainer:', responsiveMaintainerResult);
     console.log('License Check:', licenseCheckResult);
