@@ -62,7 +62,7 @@ const queries = `
   }
 `;
 // Define your GitHub Personal Access Token
-const githubToken = ' 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 '; // Replace with your GitHub token
+const githubToken = ' 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 '; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -74,7 +74,7 @@ const headers = {
 
 
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore() {
+async function fetchDataAndCalculateScore(repoUrl: string) {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -145,10 +145,26 @@ async function fetchDataAndCalculateScore() {
   }
 }
 
+async function processAndCalculateScoresForUrls(filePath: string) {
+  try {
+    const urls = await processUrls(filePath);
+    for (const repoUrl of urls) {
+      await fetchDataAndCalculateScore(repoUrl);
+    }
+  } catch (error) {
+    console.error('Error processing URLs or calculating scores:', error);
+  }
+}
+const filePath = process.argv[2];
+  if (!filePath) {
+      console.error("No file path provided.");
+      process.exit(1);
+  }
+processAndCalculateScoresForUrls(filePath);
 // Call the fetchDataAndCalculateScore function to initiate the integration
 // Call the fetchDataAndCalculateScore function to initiate the integration
 
-  fetchDataAndCalculateScore();
+// fetchDataAndCalculateScore();
 
 
 // Define a function to fetch and process issues data from the repository
