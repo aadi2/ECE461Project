@@ -48,9 +48,6 @@ const headers = {
   Authorization: `Bearer ${githubToken}`,
 };
 
-const repoUrl = 'https://github.com/cloudinary/cloudinary_npm';
-console.log('URL:', repoUrl);
-
 // Function to fetch the number of weekly commits and other required data
 async function fetchDataAndCalculateScore(url: string) {
   try {
