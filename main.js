@@ -55,9 +55,8 @@ var graphqlEndpoint = 'https://api.github.com/graphql';
 var headers = {
     Authorization: "Bearer ".concat(githubToken)
 };
-var repoUrl = parser_1.processUrls.repoUrl;
 // Function to fetch the number of weekly commits and other required data
-function fetchDataAndCalculateScore() {
+function fetchDataAndCalculateScore(repoUrl) {
     return __awaiter(this, void 0, void 0, function () {
         var response, data, lastCommitDate, readmeText, oneWeekAgo, weeklyCommitCount, _i, _a, commit, commitDate, issues, correctnessScore, busFactorResult, responsiveMaintainerResult, licenseCheckResult, netScoreResult, error_1;
         return __generator(this, function (_b) {
@@ -113,8 +112,20 @@ function fetchDataAndCalculateScore() {
         });
     });
 }
-// Call the fetchDataAndCalculateScore function to initiate the integration
-fetchDataAndCalculateScore();
+//process the file
+var filePath = process.argv[2];
+if (!filePath) {
+    console.error("No file path provided.");
+    process.exit(1);
+}
+// Call the fetchDataAndCalculateScore function to initiate the integration for each of the urls
+(0, parser_1.processUrls)(filePath).then(function (urls) {
+    urls.forEach(function (url) {
+        fetchDataAndCalculateScore(url);
+    });
+}).catch(function (error) {
+    console.error('Error processing URLs:', error);
+});
 // Define a function to fetch and process issues data from the repository
 function fetchAndProcessIssues(repositoryUrl) {
     return __awaiter(this, void 0, void 0, function () {

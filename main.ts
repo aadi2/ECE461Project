@@ -14,6 +14,7 @@ const localRepositoryDirectory = path.join(__dirname, localRepositorySubdirector
 const queries = fs.readFileSync('queries.txt', 'utf8');
 
 // Define your GitHub Personal Access Token
+
 const githubToken = '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'; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
@@ -24,10 +25,8 @@ const headers = {
   Authorization: `Bearer ${githubToken}`,
 };
 
-const repoUrl = (processUrls as any).repoUrl;
-
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore() {
+async function fetchDataAndCalculateScore(repoUrl: string) {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -95,8 +94,21 @@ async function fetchDataAndCalculateScore() {
   }
 }
 
-// Call the fetchDataAndCalculateScore function to initiate the integration
-fetchDataAndCalculateScore();
+//process the file
+const filePath = process.argv[2];
+    if (!filePath) {
+        console.error("No file path provided.");
+        process.exit(1);
+    }
+
+// Call the fetchDataAndCalculateScore function to initiate the integration for each of the urls
+processUrls(filePath).then(urls => {
+  urls.forEach(url => {
+      fetchDataAndCalculateScore(url);
+  });
+}).catch(error => {
+  console.error('Error processing URLs:', error);
+});
 
 // Define a function to fetch and process issues data from the repository
 async function fetchAndProcessIssues(repositoryUrl: string) {

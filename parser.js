@@ -9,24 +9,29 @@ var getInfo = function (url) {
 };
 exports.getInfo = getInfo;
 var processUrls = function (filePath) {
-    console.log("Attempting to process file: ".concat(filePath));
-    // Read the file content
-    fs.readFile(filePath, 'utf8', function (err, data) {
-        if (err) {
-            console.error("Error reading the file: ".concat(err));
-            process.exit(1);
-        }
-        if (!data.trim()) {
-            console.error("File is empty or contains only whitespace.");
-            process.exit(1);
-        }
-        // Split lines and process each URL
-        var urls = data.split('\n').filter(function (url) { return url.trim() !== ''; }); // this will filter out any empty lines
-        if (urls.length === 0) {
-            console.error("No URLs found in the file.");
-            process.exit(1);
-        }
-        urls.forEach(function (url) { return (0, exports.getInfo)(url); });
+    return new Promise(function (resolve, reject) {
+        console.log("Attempting to process file: ".concat(filePath));
+        // Read the file content
+        fs.readFile(filePath, 'utf8', function (err, data) {
+            if (err) {
+                console.error("Error reading the file: ".concat(err));
+                reject(err);
+                return;
+            }
+            if (!data.trim()) {
+                console.error("File is empty or contains only whitespace.");
+                reject(new Error("File is empty or contains only whitespace."));
+                return;
+            }
+            // Split lines and process each URL
+            var urls = data.split('\n').filter(function (url) { return url.trim() !== ''; }); // this will filter out any empty lines
+            if (urls.length === 0) {
+                console.error("No URLs found in the file.");
+                reject(new Error("No URLs found in the file."));
+                return;
+            }
+            resolve(urls);
+        });
     });
 };
 exports.processUrls = processUrls;
