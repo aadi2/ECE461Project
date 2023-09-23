@@ -3,6 +3,7 @@ import * as path from 'path';
 import axios from 'axios';
 import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore } from './algo';
 import { getInfo, processUrls } from './parser';
+import simpleGit, { SimpleGit, LogResult, DefaultLogFields } from 'simple-git';
 
 // Determine the subdirectory name for storing cloned repositories
 const localRepositorySubdirectory = 'cloned_repositories';
@@ -10,12 +11,34 @@ const localRepositorySubdirectory = 'cloned_repositories';
 // Construct the full path to the local repository directory
 const localRepositoryDirectory = path.join(__dirname, localRepositorySubdirectory);
 
+// Function to create or clear a directory
+function createOrClearDirectory(directoryPath: string) {
+  if (fs.existsSync(directoryPath)) {
+    const files = fs.readdirSync(directoryPath);
+    for (const file of files) {
+      const filePath = path.join(directoryPath, file);
+      if (fs.lstatSync(filePath).isDirectory()) {
+        // Recursively remove directories
+        createOrClearDirectory(filePath);
+        fs.rmdirSync(filePath);
+      } else {
+        // Delete files
+        fs.unlinkSync(filePath);
+      }
+    }
+  } else {
+    fs.mkdirSync(directoryPath, { recursive: true });
+  }
+}
+
+// Create or clear the local repository directory
+createOrClearDirectory(localRepositoryDirectory);
+
 // Read GraphQL queries from queries.txt
 const queries = fs.readFileSync('queries.txt', 'utf8');
 
 // Define your GitHub Personal Access Token
-
-const githubToken = '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'; // Replace with your GitHub token
+const githubToken = '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'; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -25,8 +48,11 @@ const headers = {
   Authorization: `Bearer ${githubToken}`,
 };
 
+const repoUrl = 'https://github.com/cloudinary/cloudinary_npm';
+console.log('URL:', repoUrl);
+
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore(repoUrl: string) {
+async function fetchDataAndCalculateScore() {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -94,21 +120,8 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
   }
 }
 
-//process the file
-const filePath = process.argv[2];
-    if (!filePath) {
-        console.error("No file path provided.");
-        process.exit(1);
-    }
-
-// Call the fetchDataAndCalculateScore function to initiate the integration for each of the urls
-processUrls(filePath).then(urls => {
-  urls.forEach(url => {
-      fetchDataAndCalculateScore(url);
-  });
-}).catch(error => {
-  console.error('Error processing URLs:', error);
-});
+// Call the fetchDataAndCalculateScore function to initiate the integration
+fetchDataAndCalculateScore();
 
 // Define a function to fetch and process issues data from the repository
 async function fetchAndProcessIssues(repositoryUrl: string) {
