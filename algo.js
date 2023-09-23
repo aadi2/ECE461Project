@@ -45,7 +45,7 @@ function calculateBusFactor(repositoryUrl, localDirectory, topContributorsCount)
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    git = (0, simple_git_1.default)();
+                    git = (0, simple_git_1.default)({ baseDir: localDirectory });
                     _b.label = 1;
                 case 1:
                     _b.trys.push([1, 4, , 5]);
