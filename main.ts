@@ -4,6 +4,8 @@ import axios from 'axios';
 import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore, RampUp } from './algo';
 import { getInfo, processUrls } from './parser';
 import simpleGit, { SimpleGit, LogResult, DefaultLogFields } from 'simple-git';
+import { endianness } from 'os';
+import { exit } from 'process';
 
 // Determine the subdirectory name for storing cloned repositories
 const localRepositorySubdirectory = 'cloned_repositories';
@@ -31,50 +33,54 @@ function createOrClearDirectory(directoryPath: string) {
   }
 }
 
-// Create or clear the local repository directory
-createOrClearDirectory(localRepositoryDirectory);
-const repoUrl = 'https://github.com/krahets/hello-algo';
 
-const { owner, repoName } = parseGitHubUrl(repoUrl);
+
+
+
+
+
+// Function to fetch the number of weekly commits and other required data
+async function fetchDataAndCalculateScore(repoUrl: string) {
+  // Define your GitHub Personal Access Token
+  const githubToken = ' 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 '; // Replace with your GitHub token
+
+  // Define headers with the authorization token
+  const headers = {
+    Authorization: `Bearer ${githubToken}`,
+  };
+  // Define the GraphQL endpoint URL
+  const graphqlEndpoint = 'https://api.github.com/graphql';
+
+  // Create or clear the local repository directory
+  createOrClearDirectory(localRepositoryDirectory);
+
+  const { owner, repoName } = parseGitHubUrl(repoUrl);
+
 // Read GraphQL queries from queries.txt
-const queries = `
-  query {
-    repository(owner:"${owner}",name:"${repoName}"){
-      defaultBranchRef{
-        target{
-          ... on Commit{
-            history(first:1){
-              edges{
-                node{
-                  committedDate
+  const queries = `
+    query {
+      repository(owner:"${owner}",name:"${repoName}"){
+        defaultBranchRef{
+          target{
+            ... on Commit{
+              history(first:1){
+                edges{
+                  node{
+                    committedDate
+                  }
                 }
               }
             }
           }
         }
-      }
-      object(expression: "HEAD:README.md") {
-        ... on Blob {
-          text
+        object(expression: "HEAD:README.md") {
+          ... on Blob {
+            text
+          }
         }
       }
     }
-  }
-`;
-// Define your GitHub Personal Access Token
-const githubToken = ' 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 '; // Replace with your GitHub token
-
-// Define the GraphQL endpoint URL
-const graphqlEndpoint = 'https://api.github.com/graphql';
-
-// Define headers with the authorization token
-const headers = {
-  Authorization: `Bearer ${githubToken}`,
-};
-
-
-// Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore(repoUrl: string) {
+  `;
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -149,6 +155,7 @@ async function processAndCalculateScoresForUrls(filePath: string) {
   try {
     const urls = await processUrls(filePath);
     for (const repoUrl of urls) {
+      console.log(repoUrl);
       await fetchDataAndCalculateScore(repoUrl);
     }
   } catch (error) {
