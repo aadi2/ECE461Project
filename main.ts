@@ -14,7 +14,7 @@ const localRepositoryDirectory = path.join(__dirname, localRepositorySubdirector
 const queries = fs.readFileSync('queries.txt', 'utf8');
 
 // Define your GitHub Personal Access Token
-const githubToken = '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'; // Replace with your GitHub token
+const githubToken = process.env.GITHUB_TOKEN; // Use environment variable for security
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -23,8 +23,6 @@ const graphqlEndpoint = 'https://api.github.com/graphql';
 const headers = {
   Authorization: `Bearer ${githubToken}`,
 };
-
-const repoUrl = (processUrls as any).repoUrl;
 
 // Function to fetch the number of weekly commits and other required data
 async function fetchDataAndCalculateScore() {
