@@ -74,7 +74,7 @@ var _a = parseGitHubUrl(repoUrl), owner = _a.owner, repoName = _a.repoName;
 // Read GraphQL queries from queries.txt
 var queries = "\n  query {\n    repository(owner:\"".concat(owner, "\",name:\"").concat(repoName, "\"){\n      defaultBranchRef{\n        target{\n          ... on Commit{\n            history(first:1){\n              edges{\n                node{\n                  committedDate\n                }\n              }\n            }\n          }\n        }\n      }\n      object(expression: \"HEAD:README.md\") {\n        ... on Blob {\n          text\n        }\n      }\n    }\n  }\n");
 // Define your GitHub Personal Access Token
-var githubToken = ' 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 '; // Replace with your GitHub token
+var githubToken = ' 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 '; // Replace with your GitHub token
 // Define the GraphQL endpoint URL
 var graphqlEndpoint = 'https://api.github.com/graphql';
 // Define headers with the authorization token
@@ -82,7 +82,7 @@ var headers = {
     Authorization: "Bearer ".concat(githubToken),
 };
 // Function to fetch the number of weekly commits and other required data
-function fetchDataAndCalculateScore(url) {
+function fetchDataAndCalculateScore(repoUrl) {
     return __awaiter(this, void 0, void 0, function () {
         var response, data, lastCommitDate, readmeText, oneWeekAgo, weeklyCommitCount, _i, _a, commit, commitDate, rampUpResult, issues, correctnessScore, busFactorResult, responsiveMaintainerResult, licenseCheckResult, netScoreResult, error_1;
         return __generator(this, function (_b) {
@@ -126,7 +126,6 @@ function fetchDataAndCalculateScore(url) {
                     rampUpResult // Use the retrieved weeklyCommits value
                     );
                     // Print the results or perform further processing
-                    console.log('URL:', url);
                     console.log('Ramp Up', rampUpResult);
                     console.log('Correctness Score', correctnessScore);
                     console.log('Bus Factor:', busFactorResult);
@@ -143,25 +142,51 @@ function fetchDataAndCalculateScore(url) {
         });
     });
 }
-// Call the fetchDataAndCalculateScore function to initiate the integration
-// Call the fetchDataAndCalculateScore function to initiate the integration
+function processAndCalculateScoresForUrls(filePath) {
+    return __awaiter(this, void 0, void 0, function () {
+        var urls, _i, urls_1, repoUrl_1, error_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 6, , 7]);
+                    return [4 /*yield*/, (0, parser_1.processUrls)(filePath)];
+                case 1:
+                    urls = _a.sent();
+                    _i = 0, urls_1 = urls;
+                    _a.label = 2;
+                case 2:
+                    if (!(_i < urls_1.length)) return [3 /*break*/, 5];
+                    repoUrl_1 = urls_1[_i];
+                    return [4 /*yield*/, fetchDataAndCalculateScore(repoUrl_1)];
+                case 3:
+                    _a.sent();
+                    _a.label = 4;
+                case 4:
+                    _i++;
+                    return [3 /*break*/, 2];
+                case 5: return [3 /*break*/, 7];
+                case 6:
+                    error_2 = _a.sent();
+                    console.error('Error processing URLs or calculating scores:', error_2);
+                    return [3 /*break*/, 7];
+                case 7: return [2 /*return*/];
+            }
+        });
+    });
+}
 var filePath = process.argv[2];
 if (!filePath) {
     console.error("No file path provided.");
     process.exit(1);
 }
-(0, parser_1.processUrls)(filePath).then(function (urls) {
-    urls.forEach(function (url) {
-        console.log("Processing URL: ".concat(url));
-        fetchDataAndCalculateScore(url);
-    });
-}).catch(function (error) {
-    console.error('Error processing URLs:', error);
-});
+processAndCalculateScoresForUrls(filePath);
+// Call the fetchDataAndCalculateScore function to initiate the integration
+// Call the fetchDataAndCalculateScore function to initiate the integration
+// fetchDataAndCalculateScore();
 // Define a function to fetch and process issues data from the repository
 function fetchAndProcessIssues(repositoryUrl) {
     return __awaiter(this, void 0, void 0, function () {
-        var parts, owner_1, repo, response, issues, error_2;
+        var parts, owner_1, repo, response, issues, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -178,8 +203,8 @@ function fetchAndProcessIssues(repositoryUrl) {
                     }); });
                     return [2 /*return*/, issues];
                 case 2:
-                    error_2 = _a.sent();
-                    console.error('Error fetching or processing issues:', error_2);
+                    error_3 = _a.sent();
+                    console.error('Error fetching or processing issues:', error_3);
                     return [2 /*return*/, []]; // Return an empty array in case of an error
                 case 3: return [2 /*return*/];
             }
