@@ -1,13 +1,20 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import axios from 'axios';
-import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck } from './algo'; // Import functions from algo.ts
+import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck } from './algo';
 import { getInfo, processUrls } from './parser';
+
+// Determine the subdirectory name for storing cloned repositories
+const localRepositorySubdirectory = 'cloned_repositories';
+
+// Construct the full path to the local repository directory
+const localRepositoryDirectory = path.join(__dirname, localRepositorySubdirectory);
 
 // Read GraphQL queries from queries.txt
 const queries = fs.readFileSync('queries.txt', 'utf8');
 
 // Define your GitHub Personal Access Token
-const githubToken = 'YOUR_GITHUB_TOKEN'; // Replace with your GitHub token
+const githubToken = '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'; // Replace with your GitHub token
 
 // Define the GraphQL endpoint URL
 const graphqlEndpoint = 'https://api.github.com/graphql';
@@ -18,8 +25,9 @@ const headers = {
 };
 
 const repoUrl = (processUrls as any).repoUrl;
-// Send the GraphQL query
-async function sendQuery() {
+
+// Function to fetch the number of weekly commits and other required data
+async function fetchDataAndCalculateScore() {
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -27,24 +35,39 @@ async function sendQuery() {
       { headers }
     );
 
-    // Handle the GraphQL response
-    const data = response.data.data; // Extract the relevant data
+    const data = response.data.data;
+
+    // Extract the necessary data from the GraphQL response
+    const lastCommitDate = new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate);
+    const readmeText = data.repository.object.text;
+
+    // Calculate the date one week ago from the current date
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Count the number of commits within the past week
+    let weeklyCommitCount = 0;
+    for (const commit of data.repository.defaultBranchRef.target.history.edges) {
+      const commitDate = new Date(commit.node.committedDate);
+      if (commitDate >= oneWeekAgo && commitDate <= lastCommitDate) {
+        weeklyCommitCount++;
+      } else {
+        // Break the loop as soon as a commit is older than one week
+        break;
+      }
+    }
 
     // Process the data using your algo functions
     const busFactorResult = await calculateBusFactor(
       repoUrl, // Replace with the actual repository URL
-      'LOCAL_DIRECTORY' // Replace with the local directory path
+      localRepositoryDirectory // Replace with the local directory path
     );
 
     const responsiveMaintainerResult = responsiveMaintainer(
-      new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate).getTime()
+      lastCommitDate.getTime()
     );
 
-    const licenseCheckResult = licenseCheck(
-      data.repository.object.text
-    );
-
-    const weeklyCommits = 0; // Replace with the actual weekly commits from QUeries
+    const licenseCheckResult = licenseCheck(readmeText);
 
     // Calculate the net score using your netScore function
     const netScoreResult = netScore(
@@ -52,7 +75,7 @@ async function sendQuery() {
       busFactorResult.length,
       responsiveMaintainerResult,
       licenseCheckResult,
-      weeklyCommits
+      weeklyCommitCount // Use the retrieved weeklyCommits value
     );
 
     // Print the results or perform further processing
@@ -62,9 +85,9 @@ async function sendQuery() {
     console.log('Net Score:', netScoreResult);
 
   } catch (error) {
-    console.error('Error sending GraphQL query:', error);
+    console.error('Error fetching data or calculating score:', error);
   }
 }
 
-// Call the sendQuery function to initiate the integration
-sendQuery();
+// Call the fetchDataAndCalculateScore function to initiate the integration
+fetchDataAndCalculateScore();
