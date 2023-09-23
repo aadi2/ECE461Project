@@ -147,18 +147,8 @@ async function fetchDataAndCalculateScore() {
 
 // Call the fetchDataAndCalculateScore function to initiate the integration
 // Call the fetchDataAndCalculateScore function to initiate the integration
-const filePath = process.argv[2];
-if (!filePath) {
-    console.error("No file path provided.");
-    process.exit(1);
-}
-processUrls(filePath).then(urls => {
-  urls.forEach(url => {
-      fetchDataAndCalculateScore(url);
-  });
-}).catch(error => {
-  console.error('Error processing URLs:', error);
-});
+
+  fetchDataAndCalculateScore();
 
 
 // Define a function to fetch and process issues data from the repository
