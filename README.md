@@ -6,11 +6,11 @@ AUTHORS: Aadi Aggarwal, Vaibhav Turaga, Ferati Ogunwemimo, Alisher Sultansikhov
 
 This project streamlines common development tasks with a Bash script, `your-script.sh`. Ensure Node.js and npm are installed for the following commands:
 
-- **Installation**: Run `./your-script.sh install` to install dependencies, including TypeScript and testing tools.
+- **Installation**: Run `./run install` to install dependencies, including TypeScript and testing tools.
 
-- **Fetching GitHub Repository Info**: Use `./your-script.sh fetchGitHubInfo filename-to-parse` to fetch GitHub repository information from a TypeScript file (place before "test" in the script).
+- **Fetching GitHub Repository Info**: Use `./run fetchGitHubInfo filename-to-parse` to fetch GitHub repository information from a TypeScript file (place before "test" in the script).
 
-- **Testing**: Execute TypeScript tests with `./your-script.sh test`. Place your tests in a "tests" folder or use filenames ending in ".test.ts".
+- **Testing**: Execute TypeScript tests with `./run test`. Place your tests in a "tests" folder or use filenames ending in ".test.ts".
 
 ## Algorithm Implementation (algo.ts)
 
