@@ -1,10 +1,8 @@
 #!/bin/bash
 
-echo "Starting run script..."
 
 # Check the number of arguments provided
 if [ "$#" -lt 1 ]; then
-    echo "Error: No arguments provided."
     exit 1
 fi
 
@@ -13,7 +11,6 @@ COMMAND=$1
 
 # Check if node and npm are installed, and if not, install them
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-    echo "Node.js and/or npm are not installed. Installing them..."
 
     # Install Node.js using a package manager suitable for your system (e.g., apt, yum, brew)
     # Replace the installation command based on your system's package manager
@@ -25,10 +22,7 @@ if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
 
     # Check if the installation was successful
     if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-        echo "Error: Failed to install Node.js and/or npm."
         exit 1
-    else
-        echo "Node.js and npm installed successfully."
     fi
 fi
 
@@ -46,7 +40,6 @@ case $COMMAND in
         # Initialize jest configuration
         npx ts-jest config:init
 
-        echo "Dependencies installed..."
         ;;
 
     "fetchGitHubInfo")
@@ -70,22 +63,18 @@ case $COMMAND in
     *)
         # Check if the file exists
         if [ ! -f "$COMMAND" ]; then
-            echo "Error: File $COMMAND not found."
             exit 1
         fi
 
         # Compile the TypeScript file and check for errors
         tsc main.ts
         if [ $? -ne 0 ]; then
-            echo "Error: Compilation failed."
             exit 1
         fi
 
         # Run the compiled JavaScript file
         node main.js "$COMMAND"
-        echo "Successfully compiled parser.ts to parser.js"
         ;;
 esac
 
-echo "Ending run script..."
 exit 0
