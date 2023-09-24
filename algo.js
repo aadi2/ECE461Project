@@ -38,10 +38,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateCorrectnessScore = exports.licenseCheck = exports.RampUp = exports.responsiveMaintainer = exports.netScore = exports.calculateBusFactor = void 0;
 var simple_git_1 = require("simple-git");
+//Bus Factor = Total Code Contributions by Top Contributors / Total Code Contributions
 function calculateBusFactor(repositoryUrl, localDirectory, topContributorsCount) {
     if (topContributorsCount === void 0) { topContributorsCount = 3; }
     return __awaiter(this, void 0, void 0, function () {
-        var git, log, commitCounts, _i, _a, commit, author, sortedContributors, busFactor, error_1;
+        var git, log, commitCounts, _i, _a, commit, author, sortedContributors, totalTopContributions, i, totalContributions, busFactor, error_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -73,14 +74,12 @@ function calculateBusFactor(repositoryUrl, localDirectory, topContributorsCount)
                         }
                     }
                     sortedContributors = Array.from(commitCounts.entries()).sort(function (a, b) { return b[1] - a[1]; });
-                    busFactor = sortedContributors.slice(0, topContributorsCount).map(function (_a) {
-                        var contributor = _a[0], count = _a[1];
-                        return ({
-                            name: contributor,
-                            commitCount: count,
-                        });
-                    });
-                    // Return the bus factor as an array of contributor objects
+                    totalTopContributions = 0;
+                    for (i = 0; i < topContributorsCount && i < sortedContributors.length; i++) {
+                        totalTopContributions += sortedContributors[i][1];
+                    }
+                    totalContributions = log.total;
+                    busFactor = totalTopContributions / totalContributions;
                     return [2 /*return*/, busFactor];
                 case 4:
                     error_1 = _b.sent();
