@@ -1,5 +1,4 @@
-!/bin/bash
-
+#!/bin/bash
 
 # Check the number of arguments provided
 if [ "$#" -lt 1 ]; then
@@ -11,7 +10,6 @@ COMMAND=$1
 
 # Check if node and npm are installed, and if not, install them
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-
     # Install Node.js using a package manager suitable for your system (e.g., apt, yum, brew)
     # Replace the installation command based on your system's package manager
     # For example, for Ubuntu, you can use:
@@ -31,15 +29,11 @@ fi
 # Check which command is being executed
 case $COMMAND in
     "install")
-        # Install TypeScript locally in your project directory
-        npm install --save-dev typescript
-
-        # Install project dependencies in userland
-        npm install --global-style --save-dev jest ts-jest @types/jest
+        # Install TypeScript and project dependencies
+        npm install --save-dev typescript jest ts-jest @types/jest axios simple-git mocha sinon chai
 
         # Initialize jest configuration
         npx ts-jest config:init
-
         ;;
 
     "fetchGitHubInfo")
@@ -51,13 +45,8 @@ case $COMMAND in
         ;;
 
     "test")
-        # Install axios and simple-git packages before running tests
-        npm install --global-style axios simple-git
-
-        # Run jest for testing. Ensure that your TypeScript tests are either in a "__tests__" folder or end with ".test.ts".
-        npx jest
-
-        # Note: The output format will depend on your jest configuration and tests. Adjust as necessary.
+        # Instead of running jest, we will run our custom test runner
+        node test-runner.js
         ;;
 
     *)
@@ -77,6 +66,10 @@ case $COMMAND in
         ;;
 esac
 
+# If the previous command was unsuccessful, exit with an error
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
 echo "Ending run script..."
 exit 0
-
