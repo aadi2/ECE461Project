@@ -1,11 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
+import JSONStream from 'jsonstream'; // Import JSONStream
 import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore, RampUp } from './algo';
 import { getInfo, processUrls } from './parser';
-import simpleGit, { SimpleGit, LogResult, DefaultLogFields } from 'simple-git';
-import { endianness } from 'os';
-import { exit } from 'process';
 
 // Determine the subdirectory name for storing cloned repositories
 const localRepositorySubdirectory = 'cloned_repositories';
@@ -33,16 +31,10 @@ function createOrClearDirectory(directoryPath: string) {
   }
 }
 
-
-
-
-
-
-
 // Function to fetch the number of weekly commits and other required data
 async function fetchDataAndCalculateScore(repoUrl: string) {
   // Define your GitHub Personal Access Token
-  const githubToken = ' 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 '; // Replace with your GitHub token
+  const githubToken = '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'; // Replace with your GitHub token
 
   // Define headers with the authorization token
   const headers = {
@@ -56,7 +48,7 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
 
   const { owner, repoName } = parseGitHubUrl(repoUrl);
 
-// Read GraphQL queries from queries.txt
+  // Read GraphQL queries from queries.txt
   const queries = `
     query {
       repository(owner:"${owner}",name:"${repoName}"){
@@ -138,41 +130,80 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
       rampUpResult // Use the retrieved weeklyCommits value
     );
 
-    // Print the results or perform further processing
-    console.log('Ramp Up', rampUpResult);
-    console.log('Correctness Score', correctnessScore);
-    console.log('Bus Factor:', busFactorResult);
-    console.log('Responsive Maintainer:', responsiveMaintainerResult);
-    console.log('License Check:', licenseCheckResult);
-    console.log('Net Score:', netScoreResult);
-
+    // Return the result for NDJSON formatting
+    return {
+      URL: repoUrl,
+      NetScore: netScoreResult,
+      RampUp: rampUpResult,
+      Correctness: correctnessScore,
+      BusFactor: busFactorResult,
+      ResponsiveMaintainer: responsiveMaintainerResult,
+      License: licenseCheckResult,
+    };
   } catch (error) {
     console.error('Error fetching data or calculating score:', error);
+    process.exit(1); // Exit with a failure status code (1) on error
   }
 }
 
-async function processAndCalculateScoresForUrls(filePath: string) {
+async function processAndCalculateScoresForUrls(filePath: string, outputStream: NodeJS.WritableStream) {
   try {
     const urls = await processUrls(filePath);
+
+    // Process URLs sequentially using async/await
     for (const repoUrl of urls) {
       console.log(repoUrl);
-      await fetchDataAndCalculateScore(repoUrl);
+      const result = await fetchDataAndCalculateScore(repoUrl);
+
+      // Format the result as NDJSON and write it to the output stream
+      outputStream.write(JSON.stringify(result) + '\n');
     }
+
+    // All URLs processed successfully, exit with a success status code (0)
+    process.exit(0);
   } catch (error) {
     console.error('Error processing URLs or calculating scores:', error);
+    process.exit(1); // Exit with a failure status code (1) on error
   }
 }
+
 const filePath = process.argv[2];
-  if (!filePath) {
-      console.error("No file path provided.");
-      process.exit(1);
+if (!filePath) {
+  console.error("No file path provided.");
+  process.exit(1); // Exit with a failure status code (1) when no file path is provided
+}
+
+// Create a writable stream for NDJSON output
+const outputStream = fs.createWriteStream('output.ndjson');
+
+// Write the NDJSON header
+outputStream.write('[');
+
+// Process URLs and write NDJSON output
+processAndCalculateScoresForUrls(filePath, outputStream);
+
+// Handle the end of NDJSON data and close the output stream
+outputStream.on('finish', () => {
+  // Close the NDJSON array
+  fs.appendFileSync('output.ndjson', ']');
+  console.log('NDJSON output written to output.ndjson');
+  process.exit(0);
+});
+
+// Define a function to parse GitHub repository URL
+function parseGitHubUrl(url) {
+  const githubRegex = /github\.com\/([^/]+)\/([^/]+)/;
+  const match = url.match(githubRegex);
+
+  if (match && match.length === 3) {
+    const owner = match[1];
+    const repoName = match[2];
+    return { owner, repoName };
+  } else {
+    console.error('Invalid GitHub URL');
+    return null;
   }
-processAndCalculateScoresForUrls(filePath);
-// Call the fetchDataAndCalculateScore function to initiate the integration
-// Call the fetchDataAndCalculateScore function to initiate the integration
-
-// fetchDataAndCalculateScore();
-
+}
 
 // Define a function to fetch and process issues data from the repository
 async function fetchAndProcessIssues(repositoryUrl: string) {
@@ -195,19 +226,5 @@ async function fetchAndProcessIssues(repositoryUrl: string) {
   } catch (error) {
     console.error('Error fetching or processing issues:', error);
     return []; // Return an empty array in case of an error
-  }
-}
-
-function parseGitHubUrl(url) {
-  const githubRegex = /github\.com\/([^/]+)\/([^/]+)/;
-  const match = url.match(githubRegex);
-
-  if (match && match.length === 3) {
-    const owner = match[1];
-    const repoName = match[2];
-    return { owner, repoName };
-  } else {
-    console.error('Invalid GitHub URL');
-    return null;
   }
 }
