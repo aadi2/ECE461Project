@@ -5,19 +5,34 @@ import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calcu
 import { getInfo, processUrls } from './parser';
 import * as dotenv from 'dotenv'
 import { json } from 'node:stream/consumers';
+import { exit } from 'process';
 const winston = require('winston'); // Import Winston using CommonJS syntax
 winston.remove(winston.transports.Console); // Remove the default console transport
-
-
 dotenv.config();
+
+// Check if GITHUB_TOKEN is set and provide a default value if not
+if (!process.env.GITHUB_TOKEN) {
+  process.exit(1);
+}
+
+if (!process.env.LOG_FILE) {
+  process.exit(1);
+}
+
+const logLevel = parseInt(process.env.LOG_LEVEL);
+
+
 // Configure Winston to use a log file and set log level based on environment variables
 winston.configure({
-  level: process.env.LOG_LEVEL || 'error', // Default to 'error' if LOG_LEVEL is not set
+  level: logLevel === 0 ? 'error' : logLevel === 1 ? 'info' : 'debug', // Default to 'error' if LOG_LEVEL is not set
   format: winston.format.json(),
   transports: [
-    new winston.transports.File({ filename: process.env.LOG_FILE || 'app.log' }), // Log to a file
+    new winston.transports.File({ filename: process.env.LOG_FILE }), // Log to a file
   ],
 });
+
+const githubToken = process.env.GITHUB_TOKEN;
+
 
 // Determine the subdirectory name for storing cloned repositories
 const localRepositorySubdirectory = 'cloned_repositories';
@@ -83,13 +98,13 @@ async function fetchDataAndCalculateScore(inputUrl: string) {
 
   const { owner, repoName } = parseGitHubUrl(repoUrl);
   // Read GraphQL queries from queries.txt
-  const queries = `
-  query {
-    repository(owner:"${owner}",name:"${repoName}") {
+  const queries =
+    `query {
+    repository(owner: "${owner}", name: "${repoName}") {
       defaultBranchRef {
         target {
           ... on Commit {
-            history(first:1) {
+            history(first: 1) {
               edges {
                 node {
                   committedDate
@@ -99,19 +114,19 @@ async function fetchDataAndCalculateScore(inputUrl: string) {
           }
         }
       }
-      object(expression: "HEAD:README.md") {
+      ObjectReadme: object(expression: "HEAD:Readme.md") {
         ... on Blob {
           text
         }
       }
-      Readme: object(expression: "HEAD:Readme.md") {
+      ObjectREADME: object(expression: "HEAD:README.md") {
         ... on Blob {
           text
         }
       }
     }
-  }
-`;
+  }`;
+
   try {
     const response = await axios.post(
       graphqlEndpoint,
@@ -125,14 +140,14 @@ async function fetchDataAndCalculateScore(inputUrl: string) {
     }
     const data = response.data.data;
     winston.info(data);
-    if (!data || !data.repository || !data.repository.object || !data.repository.object.text) {
+    if (!data || !data.repository || !data.repository.defaultBranchRef || !data.repository.defaultBranchRef.target || !data.repository.defaultBranchRef.target.history || !data.repository.defaultBranchRef.target.history.edges || !data.repository.defaultBranchRef.target.history.edges[0] || !data.repository.defaultBranchRef.target.history.edges[0].node || !data.repository.defaultBranchRef.target.history.edges[0].node.committedDate) {
       winston.error(`Error: GraphQL response does not contain the expected data for URL ${repoUrl}`);
       process.exit(1); // Exit with a failure status code (1) on error
     }
 
     // Extract the necessary data from the GraphQL response
     const lastCommitDate = new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate);
-    const readmeText = data.repository.object.text;
+    const readmeText = data.repository.ObjectReadme ? data.repository.ObjectReadme.text : (data.repository.ObjectREADME ? data.repository.ObjectREADME.text : '');
     // Calculate the date one week ago from the current date
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
