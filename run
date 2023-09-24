@@ -55,7 +55,7 @@ case $COMMAND in
 
         # Note: The output format will depend on your jest configuration and tests. Adjust as necessary.
         ;;
-    
+
     *)
         # Check if the file exists
         if [ ! -f "$COMMAND" ]; then
