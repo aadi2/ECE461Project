@@ -10,10 +10,15 @@ COMMAND=$1
 
 # Check if node and npm are installed, and if not, install them
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-    # Install Node.js using a package manager suitable for your system (e.g., apt, yum, brew)
+    # Install Node.js using a package manager suitable for your system
     # Replace the installation command based on your system's package manager
     # For example, for Ubuntu, you can use:
     # sudo apt-get install -y nodejs
+
+    # Check if curl is installed
+    if ! command -v curl &> /dev/null; then
+        exit 1
+    fi
 
     # Install npm using the Node.js package manager (npm)
     curl -fsSL https://npmjs.com/install.sh | sh
@@ -29,11 +34,17 @@ fi
 # Check which command is being executed
 case $COMMAND in
     "install")
-        # Install TypeScript and project dependencies
-        npm install --save-dev typescript jest ts-jest @types/jest axios simple-git mocha sinon chai
+        # Install TypeScript locally in your project directory
+        npm install --save-dev typescript
 
-        # Initialize jest configuration
-        npx ts-jest config:init
+        # Install project dependencies in user-land
+        npm install --global-style
+
+        # Check if the installation was successful
+        if [ $? -ne 0 ]; then
+            exit 1
+        fi
+
         ;;
 
     "fetchGitHubInfo")
@@ -45,8 +56,18 @@ case $COMMAND in
         ;;
 
     "test")
-        # Instead of running jest, we will run our custom test runner
-        node test-runner.js
+        # Install axios and simple-git packages before running tests
+        npm install --global-style axios simple-git
+
+        # Run jest for testing. Ensure that your TypeScript tests are either in a "__tests__" folder or end with ".test.ts".
+        npx jest
+
+        # Check if the tests were successful
+        if [ $? -ne 0 ]; then
+            exit 1
+        fi
+
+        # Note: The output format will depend on your jest configuration and tests. Adjust as necessary.
         ;;
 
     *)
@@ -71,5 +92,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Ending run script..."
 exit 0
