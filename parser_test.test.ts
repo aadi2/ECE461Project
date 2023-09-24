@@ -1,8 +1,19 @@
 import * as fs from 'fs';
-import * as chai from 'chai';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { getInfo, processUrls } from './parser';
+import proxyquire from 'proxyquire';
+
+// Import the module you want to test using proxyquire
+const { getInfo, processUrls } = proxyquire('./parser', {
+  fs: {
+    // Mock the fs.readFile function
+    readFile: (filePath: string, encoding: string, callback: (err: NodeJS.ErrnoException | null, data: string) => void) => {
+      // Simulate successful file read
+      callback(null, 'dummy file content');
+    },
+  },
+});
+
 
 describe('parser.js', () => {
   describe('getInfo', () => {
