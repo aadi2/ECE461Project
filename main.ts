@@ -4,6 +4,7 @@ import axios from 'axios';
 import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore, RampUp } from './algo';
 import { getInfo, processUrls } from './parser';
 import * as dotenv from 'dotenv'
+import { json } from 'node:stream/consumers';
 const winston = require('winston'); // Import Winston using CommonJS syntax
 winston.remove(winston.transports.Console); // Remove the default console transport
 
@@ -154,16 +155,18 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
     // Return the result for NDJSON formatting
     const output = {
       URL: repoUrl,
-      NET_SCORE: netScoreResult,
-      RAMP_UP_SCORE: rampUpResult,
-      CORRECTNESS_SCORE: correctnessScore,
-      BUS_FACTOR_SCORE: busFactorResult,
-      RESPONSIVE_MAINTAINER_SCORE: responsiveMaintainerResult,
-      LICENSE_SCORE: licenseCheckResult,
+      NET_SCORE: parseFloat(netScoreResult.toFixed(5)), 
+      RAMP_UP_SCORE: parseFloat(rampUpResult.toFixed(5)),
+      CORRECTNESS_SCORE: parseFloat(correctnessScore.toFixed(5)),
+      BUS_FACTOR_SCORE: parseFloat(busFactorResult.toFixed(5)),
+      RESPONSIVE_MAINTAINER_SCORE: parseFloat(responsiveMaintainerResult.toFixed(5)),
+      LICENSE_SCORE: parseFloat(licenseCheckResult.toFixed(5)),
     };
     
+    // Serialize the output to JSON
     const jsonOutput = JSON.stringify(output);
-
+    
+    // Log the JSON output
     console.log(jsonOutput);
 
   } catch (error) {
