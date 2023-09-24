@@ -1,9 +1,22 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
-import JSONStream from 'jsonstream'; // Import JSONStream
 import { calculateBusFactor, netScore, responsiveMaintainer, licenseCheck, calculateCorrectnessScore, RampUp } from './algo';
 import { getInfo, processUrls } from './parser';
+import * as dotenv from 'dotenv'
+const winston = require('winston'); // Import Winston using CommonJS syntax
+winston.remove(winston.transports.Console); // Remove the default console transport
+
+
+dotenv.config();
+// Configure Winston to use a log file and set log level based on environment variables
+winston.configure({
+  level: process.env.LOG_LEVEL || 'error', // Default to 'error' if LOG_LEVEL is not set
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: process.env.LOG_FILE || 'app.log' }), // Log to a file
+  ],
+});
 
 // Determine the subdirectory name for storing cloned repositories
 const localRepositorySubdirectory = 'cloned_repositories';
@@ -34,7 +47,7 @@ function createOrClearDirectory(directoryPath: string) {
 // Function to fetch the number of weekly commits and other required data
 async function fetchDataAndCalculateScore(repoUrl: string) {
   // Define your GitHub Personal Access Token
-  const githubToken = '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'; // Replace with your GitHub token
+  const githubToken = process.env.GITHUB_TOKEN; // Replace with your GitHub token
 
   // Define headers with the authorization token
   const headers = {
@@ -45,9 +58,10 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
 
   // Create or clear the local repository directory
   createOrClearDirectory(localRepositoryDirectory);
+  winston.info(`Processing URL: ${repoUrl}`);
 
   const { owner, repoName } = parseGitHubUrl(repoUrl);
-
+  
   // Read GraphQL queries from queries.txt
   const queries = `
     query {
@@ -84,7 +98,6 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
 
     // Extract the necessary data from the GraphQL response
     const lastCommitDate = new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate);
-    console.log(lastCommitDate);
     const readmeText = data.repository.object.text;
 
     // Calculate the date one week ago from the current date
@@ -120,6 +133,13 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
     );
 
     const licenseCheckResult = licenseCheck(readmeText);
+    
+    winston.debug(`Weekly Commit Count: ${weeklyCommitCount}`);
+    winston.debug(`Ramp Up Score: ${rampUpResult}`);
+    winston.debug(`Correctness Score: ${correctnessScore}`);
+    winston.debug(`Bus Factor Score: ${busFactorResult}`);
+    winston.debug(`Responsive Maintainer Score: ${responsiveMaintainerResult}`);
+    winston.debug(`License Score: ${licenseCheckResult}`);
 
     // Calculate the net score using your netScore function
     const netScoreResult = netScore(
@@ -129,19 +149,25 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
       correctnessScore, // Include the correctness score
       rampUpResult // Use the retrieved weeklyCommits value
     );
+    winston.info(`NET_SCORE: ${netScoreResult}`);
 
     // Return the result for NDJSON formatting
-    return {
+    const output = {
       URL: repoUrl,
-      NetScore: netScoreResult,
-      RampUp: rampUpResult,
-      Correctness: correctnessScore,
-      BusFactor: busFactorResult,
-      ResponsiveMaintainer: responsiveMaintainerResult,
-      License: licenseCheckResult,
+      NET_SCORE: netScoreResult,
+      RAMP_UP_SCORE: rampUpResult,
+      CORRECTNESS_SCORE: correctnessScore,
+      BUS_FACTOR_SCORE: busFactorResult,
+      RESPONSIVE_MAINTAINER_SCORE: responsiveMaintainerResult,
+      LICENSE_SCORE: licenseCheckResult,
     };
+    
+    const jsonOutput = JSON.stringify(output);
+
+    console.log(jsonOutput);
+
   } catch (error) {
-    console.error('Error fetching data or calculating score:', error);
+    winston.error(`Error processing URL ${repoUrl}: ${error}`);
     process.exit(1); // Exit with a failure status code (1) on error
   }
 }
@@ -152,7 +178,6 @@ async function processAndCalculateScoresForUrls(filePath: string, outputStream: 
 
     // Process URLs sequentially using async/await
     for (const repoUrl of urls) {
-      console.log(repoUrl);
       const result = await fetchDataAndCalculateScore(repoUrl);
 
       // Format the result as NDJSON and write it to the output stream
@@ -169,7 +194,6 @@ async function processAndCalculateScoresForUrls(filePath: string, outputStream: 
 
 const filePath = process.argv[2];
 if (!filePath) {
-  console.error("No file path provided.");
   process.exit(1); // Exit with a failure status code (1) when no file path is provided
 }
 
@@ -186,7 +210,6 @@ processAndCalculateScoresForUrls(filePath, outputStream);
 outputStream.on('finish', () => {
   // Close the NDJSON array
   fs.appendFileSync('output.ndjson', ']');
-  console.log('NDJSON output written to output.ndjson');
   process.exit(0);
 });
 
@@ -200,7 +223,6 @@ function parseGitHubUrl(url) {
     const repoName = match[2];
     return { owner, repoName };
   } else {
-    console.error('Invalid GitHub URL');
     return null;
   }
 }
@@ -224,7 +246,6 @@ async function fetchAndProcessIssues(repositoryUrl: string) {
 
     return issues;
   } catch (error) {
-    console.error('Error fetching or processing issues:', error);
     return []; // Return an empty array in case of an error
   }
 }
