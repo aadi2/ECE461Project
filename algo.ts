@@ -18,7 +18,6 @@ export async function calculateBusFactor(repositoryUrl: string, localDirectory: 
   try {
     // Clone the Git repository
     await git.clone(repositoryUrl, localDirectory);
-    console.log('Repository cloned successfully.');
 
     // Get the list of commit log lines
     const log: LogResult<DefaultLogFields> = await git.log();
