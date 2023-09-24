@@ -1,6 +1,6 @@
-// test-runner.js
 const { exec } = require('child_process');
 const { exit } = require('process');
+const fs = require('fs');
 
 // Use Mocha as the test runner for running the tests
 const command = './node_modules/.bin/mocha --reporter json parser-test.js';
@@ -10,20 +10,39 @@ exec(command, (error, stdout, stderr) => {
         console.error(`exec error: ${error}`);
         exit(1);
     }
+
     try {
         const report = JSON.parse(stdout);
-
-        // Count passed test cases
         const passedTests = report.stats.passes;
         const totalTests = report.stats.tests;
-        
-        // Assuming a static code coverage of 80%. In a real-world scenario, you would use a tool like Istanbul/nyc to calculate the actual coverage.
-        const lineCoverage = 80;
 
-        console.log(`${passedTests}/${totalTests} test cases passed. ${lineCoverage}% line coverage achieved.`);
+        // For code coverage, we'll utilize nyc (which is Istanbul's command-line tool)
+        exec('./node_modules/.bin/nyc report --reporter=json', (err, coverageOutput) => {
+            if (err) {
+                console.error(`Coverage error: ${err}`);
+                exit(1);
+            }
 
-        // Exit 0 if all tests pass, otherwise exit 1
-        exit(report.stats.failures > 0 ? 1 : 0);
+            try {
+                const coverageReport = JSON.parse(coverageOutput);
+                const lineCoverage = (coverageReport.total.lines.covered / coverageReport.total.lines.total) * 100;
+
+                console.log(`${passedTests}/${totalTests} test cases passed. ${lineCoverage.toFixed(2)}% line coverage achieved.`);
+
+                // Writing test results to a file
+                fs.writeFileSync('test-results.ndjson', JSON.stringify({
+                    TEST_PASSED: passedTests,
+                    TEST_TOTAL: totalTests,
+                    LINE_COVERAGE: lineCoverage.toFixed(2)
+                }) + '\n');
+
+                // Exit 0 if all tests pass, otherwise exit 1
+                exit(report.stats.failures > 0 ? 1 : 0);
+            } catch (coverageParseError) {
+                console.error(`Failed to parse coverage report: ${coverageParseError}`);
+                exit(1);
+            }
+        });
     } catch (parseError) {
         console.error(`Failed to parse test report: ${parseError}`);
         exit(1);
