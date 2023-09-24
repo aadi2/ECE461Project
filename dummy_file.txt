@@ -1,0 +1,99 @@
+import fs from 'fs';
+import { getInfo, processUrls } from './parser';
+
+jest.mock('fs');
+
+describe('parser.js', () => {
+  describe('getInfo', () => {
+    test('should log a message when processing a URL', () => {
+      const consoleLogMock = jest.spyOn(console, 'log').mockImplementation();
+      const url = 'https://example.com';
+      getInfo(url);
+      expect(consoleLogMock).toHaveBeenCalledWith(`Processing URL: ${url}`);
+      consoleLogMock.mockRestore();
+    });
+
+    test('should log a message when processing another URL', () => {
+      const consoleLogMock = jest.spyOn(console, 'log').mockImplementation();
+      const url = 'https://another-example.com';
+      getInfo(url);
+      expect(consoleLogMock).toHaveBeenCalledWith(`Processing URL: ${url}`);
+      consoleLogMock.mockRestore();
+    });
+
+    test('should log a message when processing an empty URL', () => {
+      const consoleLogMock = jest.spyOn(console, 'log').mockImplementation();
+      const url = '';
+      getInfo(url);
+      expect(consoleLogMock).toHaveBeenCalledWith(`Processing URL: ${url}`);
+      consoleLogMock.mockRestore();
+    });
+  });
+
+  describe('processUrls', () => {
+    afterEach(() => {
+      jest.resetAllMocks();
+    });
+
+    test('should reject with an error if the file is empty', async () => {
+      (fs.readFile as jest.Mock).mockImplementation((_path, _opts, callback) => callback(null, ''));
+
+      await expect(processUrls('empty-file.txt')).rejects.toThrow('File is empty or contains only whitespace.');
+    });
+
+    test('should reject with an error if no URLs are found in the file', async () => {
+      (fs.readFile as jest.Mock).mockImplementation((_path, _opts, callback) => callback(null, '\n \n \n'));
+
+      await expect(processUrls('no-urls-file.txt')).rejects.toThrow('No URLs found in the file.');
+    });
+
+    test('should resolve with an array of URLs when valid data is provided', async () => {
+      (fs.readFile as jest.Mock).mockImplementation((_path, _opts, callback) => callback(null, 'https://url1.com\nhttps://url2.com\n'));
+
+      const urls = await processUrls('valid-urls-file.txt');
+      expect(urls).toEqual(['https://url1.com', 'https://url2.com']);
+    });
+
+    // ... Continue for the rest of your tests in a similar manner
+  });
+});
+
+    // ... (other tests above)
+
+    test('should handle an error from the fs.readFile function', async () => {
+      const errorMessage = 'Read file error';
+      (fs.readFile as jest.Mock).mockImplementation((_path, _opts, callback) => callback(new Error(errorMessage), null));
+
+      await expect(processUrls('error-file.txt')).rejects.toThrow(errorMessage);
+    });
+
+    test('should process URLs from a file and filter out any invalid ones', async () => {
+      const content = 'https://valid-url.com\nnot-a-url\nhttps://another-valid-url.com';
+      (fs.readFile as jest.Mock).mockImplementation((_path, _opts, callback) => callback(null, content));
+
+      const urls = await processUrls('mixed-content-file.txt');
+      expect(urls).toEqual(['https://valid-url.com', 'https://another-valid-url.com']);
+    });
+
+    test('should process URLs and trim any whitespace', async () => {
+      const content = '   https://valid-url.com   \n   not-a-url   \n   https://another-valid-url.com   ';
+      (fs.readFile as jest.Mock).mockImplementation((_path, _opts, callback) => callback(null, content));
+
+      const urls = await processUrls('whitespace-file.txt');
+      expect(urls).toEqual(['https://valid-url.com', 'https://another-valid-url.com']);
+    });
+
+    test('should handle large files efficiently', async () => {
+      // This test is more conceptual, ensuring that the logic doesn't break down with large inputs.
+      // For the sake of this example, it's simplified.
+      const largeFileContent = 'https://example.com\n'.repeat(10000);
+      (fs.readFile as jest.Mock).mockImplementation((_path, _opts, callback) => callback(null, largeFileContent));
+
+      const urls = await processUrls('large-file.txt');
+      expect(urls).toHaveLength(10000);
+    });
+
+    // ... You can add more tests as per your requirements
+
+  });
+});
