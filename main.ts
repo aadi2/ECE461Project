@@ -46,7 +46,27 @@ function createOrClearDirectory(directoryPath: string) {
 }
 
 // Function to fetch the number of weekly commits and other required data
-async function fetchDataAndCalculateScore(repoUrl: string) {
+async function fetchDataAndCalculateScore(inputUrl: string) {
+  let repoUrl = inputUrl;
+
+  // Check if the input URL is an npm package link and try to get the corresponding GitHub repo
+  if (inputUrl.startsWith('https://www.npmjs.com/package/')) {
+    const packageName = extractPackageNameFromNpmLink(inputUrl);
+
+    if (packageName) {
+      const githubRepo = await getGitHubRepoFromNpm(packageName);
+
+      if (githubRepo) {
+        repoUrl = githubRepo;
+      } else {
+        winston.error(`Unable to find GitHub repository for npm package "${packageName}"`);
+        process.exit(1); // Exit with a failure status code (1) on error
+      }
+    } else {
+      winston.error(`Invalid npm package link: "${inputUrl}"`);
+      process.exit(1); // Exit with a failure status code (1) on error
+    }
+  }
   // Define your GitHub Personal Access Token
   const githubToken = process.env.GITHUB_TOKEN; // Replace with your GitHub token
 
@@ -62,45 +82,57 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
   winston.info(`Processing URL: ${repoUrl}`);
 
   const { owner, repoName } = parseGitHubUrl(repoUrl);
-  
   // Read GraphQL queries from queries.txt
   const queries = `
-    query {
-      repository(owner:"${owner}",name:"${repoName}"){
-        defaultBranchRef{
-          target{
-            ... on Commit{
-              history(first:1){
-                edges{
-                  node{
-                    committedDate
-                  }
+  query {
+    repository(owner:"${owner}",name:"${repoName}") {
+      defaultBranchRef {
+        target {
+          ... on Commit {
+            history(first:1) {
+              edges {
+                node {
+                  committedDate
                 }
               }
             }
           }
         }
-        object(expression: "HEAD:README.md") {
-          ... on Blob {
-            text
-          }
+      }
+      object(expression: "HEAD:README.md") {
+        ... on Blob {
+          text
+        }
+      }
+      Readme: object(expression: "HEAD:Readme.md") {
+        ... on Blob {
+          text
         }
       }
     }
-  `;
+  }
+`;
   try {
     const response = await axios.post(
       graphqlEndpoint,
       { query: queries },
       { headers }
     );
-
+    if (response.data.errors) {
+      // Log GraphQL query errors
+      winston.error(`GraphQL query errors: ${JSON.stringify(response.data.errors)}`);
+      process.exit(1); // Exit with a failure status code (1) on error
+    }
     const data = response.data.data;
+    winston.info(data);
+    if (!data || !data.repository || !data.repository.object || !data.repository.object.text) {
+      winston.error(`Error: GraphQL response does not contain the expected data for URL ${repoUrl}`);
+      process.exit(1); // Exit with a failure status code (1) on error
+    }
 
     // Extract the necessary data from the GraphQL response
     const lastCommitDate = new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate);
     const readmeText = data.repository.object.text;
-
     // Calculate the date one week ago from the current date
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -176,6 +208,7 @@ async function fetchDataAndCalculateScore(repoUrl: string) {
 }
 
 async function processAndCalculateScoresForUrls(filePath: string, outputStream: NodeJS.WritableStream) {
+  
   try {
     const urls = await processUrls(filePath);
 
@@ -250,5 +283,37 @@ async function fetchAndProcessIssues(repositoryUrl: string) {
     return issues;
   } catch (error) {
     return []; // Return an empty array in case of an error
+  }
+}
+
+
+// Function to extract the npm package name from an npm link
+function extractPackageNameFromNpmLink(npmLink: string): string | null {
+  const npmLinkRegex = /www\.npmjs\.com\/package\/([^/]+)/;
+  const match = npmLink.match(npmLinkRegex);
+
+  if (match && match.length === 2) {
+    return match[1];
+  } else {
+    return null;
+  }
+}
+
+// Function to fetch GitHub repository information from an npm package name
+async function getGitHubRepoFromNpm(packageName: string): Promise<string | null> {
+  try {
+    const response = await axios.get(`https://registry.npmjs.org/${packageName}`);
+    const packageData = response.data;
+
+    if (packageData.repository && packageData.repository.url) {
+      // Extract the GitHub repository URL from the npm package data
+      const repositoryUrl = packageData.repository.url;
+      // Convert the npm-specific URL to a GitHub URL
+      const githubUrl = repositoryUrl.replace(/^git\+/, '').replace(/\.git$/, '');
+      return githubUrl;
+    }
+    return null;
+  } catch (error) {
+    return null;
   }
 }
