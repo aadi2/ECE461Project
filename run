@@ -1,3 +1,11 @@
+#This file is part of ECE461Project.
+
+#ECE461Projectis free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
+
+#ECE461Project is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+#You should have received a copy of the GNU General Public License along with Foobar. If not, see https://www.gnu.org/licenses/. 
+
 #!/bin/bash
 
 # Check the number of arguments provided
@@ -56,18 +64,18 @@ case $COMMAND in
         ;;
 
     "test")
-        # Install axios and simple-git packages before running tests
-        npm install --global-style axios simple-git
+        # Install necessary packages before running tests
+        npm install --global-style axios simple-git nyc
 
-        # Run jest for testing. Ensure that your TypeScript tests are either in a "__tests__" folder or end with ".test.ts".
-        npx jest
+        # Run jest for testing through nyc for coverage. Ensure that your TypeScript tests are either in a "__tests__" folder or end with ".test.ts".
+        npx nyc --check-coverage --lines 80 jest
 
-        # Check if the tests were successful
+        # Check if the tests and coverage check were successful
         if [ $? -ne 0 ]; then
             exit 1
         fi
 
-        # Note: The output format will depend on your jest configuration and tests. Adjust as necessary.
+        # Note: The output format will depend on your jest and nyc configuration. Adjust as necessary.
         ;;
 
     *)
@@ -85,6 +93,7 @@ case $COMMAND in
         # Run the compiled JavaScript file
         node main.js "$COMMAND"
         ;;
+
 esac
 
 # If the previous command was unsuccessful, exit with an error

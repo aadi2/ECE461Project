@@ -1,3 +1,13 @@
+/*
+This file is part of ECE461Project.
+
+ECE461Projectis free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
+
+ECE461Project is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with Foobar. If not, see https://www.gnu.org/licenses/. 
+*/
+
 import simpleGit, { SimpleGit, LogResult, DefaultLogFields } from 'simple-git';
 
 interface Contributor {
@@ -17,8 +27,8 @@ export async function calculateBusFactor(repositoryUrl: string, localDirectory: 
 
   try {
     // Clone the Git repository
-    await git.clone(repositoryUrl, localDirectory);
-
+    const httpsRepositoryUrl = convertToHttpsUrl(repositoryUrl);
+    await git.clone(httpsRepositoryUrl, localDirectory);
     // Get the list of commit log lines
     const log: LogResult<DefaultLogFields> = await git.log();
 
@@ -62,7 +72,7 @@ export async function calculateBusFactor(repositoryUrl: string, localDirectory: 
 
 
 export function netScore(ls: number, bf: number, rm: number, cs: number, ru: number) {
-  return (ls * (bf * 0.3 + rm * 0.3 + cs * 0.1 + ru * 0.2)); // Adjust the weights as needed
+  return (ls * .1 + + bf * 0.3 + rm * 0.3 + cs * 0.1 + ru * 0.2); // Adjust the weights as needed
 }
 
 export function responsiveMaintainer(date: number) {
@@ -78,7 +88,7 @@ export function responsiveMaintainer(date: number) {
 }
 
 export function RampUp(weekly: number) {
-  let score: number = weekly / 100000000;
+  let score: number = weekly / 100;
   if (score < 1) {
     return score;
   }
@@ -105,4 +115,17 @@ export function calculateCorrectnessScore(issues: Issue[]): number {
     return 1; // If there are no bugs, consider it perfect
   }
   return 1 - openBugs / totalBugs;
+}
+
+function convertToHttpsUrl(repositoryUrl: string): string {
+  // Check if the repository URL starts with 'git@github.com:'
+  if (repositoryUrl.startsWith('git@github.com:')) {
+    // Extract the owner and repo from the SSH URL
+    const parts = repositoryUrl.split(':');
+    const ownerAndRepo = parts[1].replace('.git', '');
+    // Construct the HTTPS URL
+    return `https://github.com/${ownerAndRepo}`;
+  }
+  // If it's not an SSH URL, return the original URL
+  return repositoryUrl;
 }

@@ -1,3 +1,13 @@
+/*
+This file is part of ECE461Project.
+
+ECE461Projectis free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
+
+ECE461Project is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with Foobar. If not, see https://www.gnu.org/licenses/. 
+*/
+
 import * as fs from 'fs';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
@@ -104,5 +114,95 @@ describe('parser.js', () => {
       expect(resolveStub.firstCall.args[0]).to.have.lengthOf(10000);
     });
 
+        it('should process URLs and ignore commented lines', async () => {
+          const filePath = 'commented-file.rtf';
+          const content = 'https://valid-url.com\n# This is a comment line\nhttps://another-valid-url.com';
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://valid-url.com', 'https://another-valid-url.com']);
+      });
+  
+      it('should ignore lines with only whitespace when processing URLs', async () => {
+          const filePath = 'whitespace-lines-file.rtf';
+          const content = 'https://valid-url.com\n\nhttps://another-valid-url.com';
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://valid-url.com', 'https://another-valid-url.com']);
+      });
+  
+      it('should process and decode URLs with special characters', async () => {
+          const filePath = 'encoded-url-file.rtf';
+          const content = 'https://example.com/%20space\nhttps://example.com/%3Fquery';
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://example.com/ space', 'https://example.com/?query']);
+      });
+  
+      it('should process URLs and add the "https://" prefix if missing', async () => {
+        const filePath = 'no-https-file.rtf';
+        const content = 'example.com\nwww.another-example.com';
+        const resolveStub = sinon.stub().returns([]);
+        sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+        await processUrls(filePath).then(resolveStub);
+        expect(resolveStub.calledOnce).to.be.true;
+        expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://example.com', 'https://www.another-example.com']);
+      });
+
+      it('should process only unique URLs', async () => {
+          const filePath = 'duplicate-urls-file.rtf';
+          const content = 'https://example.com\nhttps://example.com';
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://example.com']);
+      });
+  
+      it('should handle files with a large number of unique URLs', async () => {
+          const filePath = 'many-unique-urls-file.rtf';
+          const manyUrls = Array.from({ length: 5000 }, (_, i) => `https://example${i}.com`).join('\n');
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, manyUrls);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.have.lengthOf(5000);
+      });
+  
+      it('should process URLs and filter out non-HTTP/HTTPS schemes', async () => {
+          const filePath = 'mixed-schemes-file.rtf';
+          const content = 'ftp://invalid-url.com\nhttps://valid-url.com\nmailto:email@example.com';
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://valid-url.com']);
+      });
+  
+      it('should process URLs with port numbers correctly', async () => {
+          const filePath = 'port-number-file.rtf';
+          const content = 'https://example.com:8080\nhttps://another-example.com:443';
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://example.com:8080', 'https://another-example.com:443']);
+      });
+  
+      it('should handle files with both IPv4 and domain URLs', async () => {
+          const filePath = 'ipv4-domain-file.rtf';
+          const content = 'https://192.168.1.1\nhttps://example.com';
+          const resolveStub = sinon.stub().returns([]);
+          sinon.stub(fs, 'readFile').callsArgWith(2, null, content);
+          await processUrls(filePath).then(resolveStub);
+          expect(resolveStub.calledOnce).to.be.true;
+          expect(resolveStub.firstCall.args[0]).to.deep.equal(['https://192.168.1.1', 'https://example.com']);
+      });
   });
-});
+  });
+
