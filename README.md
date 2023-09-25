@@ -47,3 +47,20 @@ These modules handle and process URLs from a file, with JavaScript (`parser.js`)
 - Import `getInfo` function for custom URL processing.
 
 - Run as a script with `node parser.js filePath` (JavaScript) or `ts-node parser.ts filePath` (TypeScript).
+
+## Testing the Parser Module: `parser_test.test.ts`
+
+This test file is designed to evaluate the functionality and robustness of the parser module. The tests leverage several libraries including `chai` for assertions, `sinon` for spies, stubs, and mocks, and `proxyquire` to intercept module dependencies.
+
+### Mocking Dependencies
+
+To isolate the functionality of the parser from external dependencies, we're using `proxyquire`. In this test suite, the `fs.readFile` function is mocked to prevent actual file I/O operations:
+
+```javascript
+const { getInfo, processUrls } = proxyquire('./parser', {
+  fs: {
+    readFile: (filePath: string, encoding: string, callback: (err: NodeJS.ErrnoException | null, data: string) => void) => {
+      callback(null, 'dummy file content');
+    },
+  },
+});
