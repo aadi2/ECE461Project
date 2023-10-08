@@ -7,3 +7,4 @@ package-lock.json
 checker.py
 helper.py
 output.ndjson
+.nyc_output
