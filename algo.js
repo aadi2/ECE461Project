@@ -1,3 +1,4 @@
+"use strict";
 /*
 This file is part of ECE461Project.
 
@@ -5,10 +6,8 @@ ECE461Projectis free software: you can redistribute it and/or modify it under th
 
 ECE461Project is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with Foobar. If not, see https://www.gnu.org/licenses/. 
+You should have received a copy of the GNU General Public License along with Foobar. If not, see https://www.gnu.org/licenses/.
 */
-
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -24,7 +23,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+        while (_) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -45,27 +44,25 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 exports.calculateCorrectnessScore = exports.licenseCheck = exports.RampUp = exports.responsiveMaintainer = exports.netScore = exports.calculateBusFactor = void 0;
 var simple_git_1 = require("simple-git");
 //Bus Factor = Total Code Contributions by Top Contributors / Total Code Contributions
 function calculateBusFactor(repositoryUrl, localDirectory, topContributorsCount) {
     if (topContributorsCount === void 0) { topContributorsCount = 3; }
     return __awaiter(this, void 0, void 0, function () {
-        var git, log, commitCounts, _i, _a, commit, author, sortedContributors, totalTopContributions, i, totalContributions, busFactor, error_1;
+        var git, httpsRepositoryUrl, log, commitCounts, _i, _a, commit, author, sortedContributors, totalTopContributions, i, totalContributions, busFactor, error_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    git = (0, simple_git_1.default)({ baseDir: localDirectory });
+                    git = (0, simple_git_1["default"])({ baseDir: localDirectory });
                     _b.label = 1;
                 case 1:
                     _b.trys.push([1, 4, , 5]);
-                    // Clone the Git repository
-                    return [4 /*yield*/, git.clone(repositoryUrl, localDirectory)];
+                    httpsRepositoryUrl = convertToHttpsUrl(repositoryUrl);
+                    return [4 /*yield*/, git.clone(httpsRepositoryUrl, localDirectory)];
                 case 2:
-                    // Clone the Git repository
                     _b.sent();
-                    console.log('Repository cloned successfully.');
                     return [4 /*yield*/, git.log()];
                 case 3:
                     log = _b.sent();
@@ -102,7 +99,7 @@ function calculateBusFactor(repositoryUrl, localDirectory, topContributorsCount)
 }
 exports.calculateBusFactor = calculateBusFactor;
 function netScore(ls, bf, rm, cs, ru) {
-    return (ls * (bf * 0.3 + rm * 0.3 + cs * 0.1 + ru * 0.2)); // Adjust the weights as needed
+    return (ls * .1 + +bf * 0.3 + rm * 0.3 + cs * 0.1 + ru * 0.2); // Adjust the weights as needed
 }
 exports.netScore = netScore;
 function responsiveMaintainer(date) {
@@ -118,7 +115,7 @@ function responsiveMaintainer(date) {
 }
 exports.responsiveMaintainer = responsiveMaintainer;
 function RampUp(weekly) {
-    var score = weekly / 100000000;
+    var score = weekly / 100;
     if (score < 1) {
         return score;
     }
@@ -145,3 +142,15 @@ function calculateCorrectnessScore(issues) {
     return 1 - openBugs / totalBugs;
 }
 exports.calculateCorrectnessScore = calculateCorrectnessScore;
+function convertToHttpsUrl(repositoryUrl) {
+    // Check if the repository URL starts with 'git@github.com:'
+    if (repositoryUrl.startsWith('git@github.com:')) {
+        // Extract the owner and repo from the SSH URL
+        var parts = repositoryUrl.split(':');
+        var ownerAndRepo = parts[1].replace('.git', '');
+        // Construct the HTTPS URL
+        return "https://github.com/".concat(ownerAndRepo);
+    }
+    // If it's not an SSH URL, return the original URL
+    return repositoryUrl;
+}

@@ -1,3 +1,4 @@
+"use strict";
 /*
 This file is part of ECE461Project.
 
@@ -5,10 +6,8 @@ ECE461Projectis free software: you can redistribute it and/or modify it under th
 
 ECE461Project is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with Foobar. If not, see https://www.gnu.org/licenses/. 
+You should have received a copy of the GNU General Public License along with Foobar. If not, see https://www.gnu.org/licenses/.
 */
-
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -24,7 +23,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+        while (_) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -45,12 +44,33 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 var fs = require("fs");
 var path = require("path");
 var axios_1 = require("axios");
 var algo_1 = require("./algo");
 var parser_1 = require("./parser");
+var dotenv = require("dotenv");
+var winston = require('winston'); // Import Winston using CommonJS syntax
+winston.remove(winston.transports.Console); // Remove the default console transport
+dotenv.config();
+// Check if GITHUB_TOKEN is set and provide a default value if not
+if (!process.env.GITHUB_TOKEN) {
+    process.exit(1);
+}
+if (!process.env.LOG_FILE) {
+    process.exit(1);
+}
+var logLevel = parseInt(process.env.LOG_LEVEL);
+// Configure Winston to use a log file and set log level based on environment variables
+winston.configure({
+    level: logLevel === 0 ? 'error' : logLevel === 1 ? 'info' : 'debug',
+    format: winston.format.json(),
+    transports: [
+        new winston.transports.File({ filename: process.env.LOG_FILE }), // Log to a file
+    ]
+});
+var githubToken = process.env.GITHUB_TOKEN;
 // Determine the subdirectory name for storing cloned repositories
 var localRepositorySubdirectory = 'cloned_repositories';
 // Construct the full path to the local repository directory
@@ -77,40 +97,67 @@ function createOrClearDirectory(directoryPath) {
         fs.mkdirSync(directoryPath, { recursive: true });
     }
 }
-// Create or clear the local repository directory
-createOrClearDirectory(localRepositoryDirectory);
-var repoUrl = 'https://github.com/krahets/hello-algo';
-var _a = parseGitHubUrl(repoUrl), owner = _a.owner, repoName = _a.repoName;
-// Read GraphQL queries from queries.txt
-var queries = "\n  query {\n    repository(owner:\"".concat(owner, "\",name:\"").concat(repoName, "\"){\n      defaultBranchRef{\n        target{\n          ... on Commit{\n            history(first:1){\n              edges{\n                node{\n                  committedDate\n                }\n              }\n            }\n          }\n        }\n      }\n      object(expression: \"HEAD:README.md\") {\n        ... on Blob {\n          text\n        }\n      }\n    }\n  }\n");
-// Define your GitHub Personal Access Token
-var githubToken = ' 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 '; // Replace with your GitHub token
-// Define the GraphQL endpoint URL
-var graphqlEndpoint = 'https://api.github.com/graphql';
-// Define headers with the authorization token
-var headers = {
-    Authorization: "Bearer ".concat(githubToken),
-};
 // Function to fetch the number of weekly commits and other required data
-function fetchDataAndCalculateScore(repoUrl) {
+function fetchDataAndCalculateScore(inputUrl) {
     return __awaiter(this, void 0, void 0, function () {
-        var response, data, lastCommitDate, readmeText, oneWeekAgo, weeklyCommitCount, _i, _a, commit, commitDate, rampUpResult, issues, correctnessScore, busFactorResult, responsiveMaintainerResult, licenseCheckResult, netScoreResult, error_1;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var repoUrl, packageName, githubRepo, githubToken, headers, graphqlEndpoint, _a, owner, repoName, queries, response, data, lastCommitDate, readmeText, oneWeekAgo, weeklyCommitCount, _i, _b, commit, commitDate, rampUpResult, issues, correctnessScore, busFactorResult, responsiveMaintainerResult, licenseCheckResult, netScoreResult, output, jsonOutput, error_1;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
-                    _b.trys.push([0, 4, , 5]);
-                    return [4 /*yield*/, axios_1.default.post(graphqlEndpoint, { query: queries }, { headers: headers })];
+                    repoUrl = inputUrl;
+                    if (!inputUrl.startsWith('https://www.npmjs.com/package/')) return [3 /*break*/, 3];
+                    packageName = extractPackageNameFromNpmLink(inputUrl);
+                    if (!packageName) return [3 /*break*/, 2];
+                    return [4 /*yield*/, getGitHubRepoFromNpm(packageName)];
                 case 1:
-                    response = _b.sent();
+                    githubRepo = _c.sent();
+                    if (githubRepo) {
+                        repoUrl = githubRepo;
+                    }
+                    else {
+                        winston.error("Unable to find GitHub repository for npm package \"".concat(packageName, "\""));
+                        process.exit(1); // Exit with a failure status code (1) on error
+                    }
+                    return [3 /*break*/, 3];
+                case 2:
+                    winston.error("Invalid npm package link: \"".concat(inputUrl, "\""));
+                    process.exit(1); // Exit with a failure status code (1) on error
+                    _c.label = 3;
+                case 3:
+                    githubToken = process.env.GITHUB_TOKEN;
+                    headers = {
+                        Authorization: "Bearer ".concat(githubToken)
+                    };
+                    graphqlEndpoint = 'https://api.github.com/graphql';
+                    // Create or clear the local repository directory
+                    createOrClearDirectory(localRepositoryDirectory);
+                    winston.info("Processing URL: ".concat(repoUrl));
+                    _a = parseGitHubUrl(repoUrl), owner = _a.owner, repoName = _a.repoName;
+                    queries = "query {\n    repository(owner: \"".concat(owner, "\", name: \"").concat(repoName, "\") {\n      defaultBranchRef {\n        target {\n          ... on Commit {\n            history(first: 1) {\n              edges {\n                node {\n                  committedDate\n                }\n              }\n            }\n          }\n        }\n      }\n      ObjectReadme: object(expression: \"HEAD:Readme.md\") {\n        ... on Blob {\n          text\n        }\n      }\n      ObjectREADME: object(expression: \"HEAD:README.md\") {\n        ... on Blob {\n          text\n        }\n      }\n    }\n  }");
+                    _c.label = 4;
+                case 4:
+                    _c.trys.push([4, 8, , 9]);
+                    return [4 /*yield*/, axios_1["default"].post(graphqlEndpoint, { query: queries }, { headers: headers })];
+                case 5:
+                    response = _c.sent();
+                    if (response.data.errors) {
+                        // Log GraphQL query errors
+                        winston.error("GraphQL query errors: ".concat(JSON.stringify(response.data.errors)));
+                        process.exit(1); // Exit with a failure status code (1) on error
+                    }
                     data = response.data.data;
+                    winston.info(data);
+                    if (!data || !data.repository || !data.repository.defaultBranchRef || !data.repository.defaultBranchRef.target || !data.repository.defaultBranchRef.target.history || !data.repository.defaultBranchRef.target.history.edges || !data.repository.defaultBranchRef.target.history.edges[0] || !data.repository.defaultBranchRef.target.history.edges[0].node || !data.repository.defaultBranchRef.target.history.edges[0].node.committedDate) {
+                        winston.error("Error: GraphQL response does not contain the expected data for URL ".concat(repoUrl));
+                        process.exit(1); // Exit with a failure status code (1) on error
+                    }
                     lastCommitDate = new Date(data.repository.defaultBranchRef.target.history.edges[0].node.committedDate);
-                    console.log(lastCommitDate);
-                    readmeText = data.repository.object.text;
+                    readmeText = data.repository.ObjectReadme ? data.repository.ObjectReadme.text : (data.repository.ObjectREADME ? data.repository.ObjectREADME.text : '');
                     oneWeekAgo = new Date();
                     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                     weeklyCommitCount = 0;
-                    for (_i = 0, _a = data.repository.defaultBranchRef.target.history.edges; _i < _a.length; _i++) {
-                        commit = _a[_i];
+                    for (_i = 0, _b = data.repository.defaultBranchRef.target.history.edges; _i < _b.length; _i++) {
+                        commit = _b[_i];
                         commitDate = new Date(commit.node.committedDate);
                         if (commitDate >= oneWeekAgo && commitDate <= lastCommitDate) {
                             weeklyCommitCount++;
@@ -122,39 +169,52 @@ function fetchDataAndCalculateScore(repoUrl) {
                     }
                     rampUpResult = (0, algo_1.RampUp)(weeklyCommitCount);
                     return [4 /*yield*/, fetchAndProcessIssues(repoUrl)];
-                case 2:
-                    issues = _b.sent();
+                case 6:
+                    issues = _c.sent();
                     correctnessScore = (0, algo_1.calculateCorrectnessScore)(issues);
                     return [4 /*yield*/, (0, algo_1.calculateBusFactor)(repoUrl, // Replace with the actual repository URL
                         localRepositoryDirectory // Replace with the local directory path
                         )];
-                case 3:
-                    busFactorResult = _b.sent();
+                case 7:
+                    busFactorResult = _c.sent();
                     responsiveMaintainerResult = (0, algo_1.responsiveMaintainer)(lastCommitDate.getTime());
                     licenseCheckResult = (0, algo_1.licenseCheck)(readmeText);
+                    winston.debug("Weekly Commit Count: ".concat(weeklyCommitCount));
+                    winston.debug("Ramp Up Score: ".concat(rampUpResult));
+                    winston.debug("Correctness Score: ".concat(correctnessScore));
+                    winston.debug("Bus Factor Score: ".concat(busFactorResult));
+                    winston.debug("Responsive Maintainer Score: ".concat(responsiveMaintainerResult));
+                    winston.debug("License Score: ".concat(licenseCheckResult));
                     netScoreResult = (0, algo_1.netScore)(licenseCheckResult, busFactorResult, responsiveMaintainerResult, correctnessScore, // Include the correctness score
                     rampUpResult // Use the retrieved weeklyCommits value
                     );
-                    // Print the results or perform further processing
-                    console.log('Ramp Up', rampUpResult);
-                    console.log('Correctness Score', correctnessScore);
-                    console.log('Bus Factor:', busFactorResult);
-                    console.log('Responsive Maintainer:', responsiveMaintainerResult);
-                    console.log('License Check:', licenseCheckResult);
-                    console.log('Net Score:', netScoreResult);
-                    return [3 /*break*/, 5];
-                case 4:
-                    error_1 = _b.sent();
-                    console.error('Error fetching data or calculating score:', error_1);
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
+                    winston.info("NET_SCORE: ".concat(netScoreResult));
+                    output = {
+                        URL: repoUrl,
+                        NET_SCORE: parseFloat(netScoreResult.toFixed(5)),
+                        RAMP_UP_SCORE: parseFloat(rampUpResult.toFixed(5)),
+                        CORRECTNESS_SCORE: parseFloat(correctnessScore.toFixed(5)),
+                        BUS_FACTOR_SCORE: parseFloat(busFactorResult.toFixed(5)),
+                        RESPONSIVE_MAINTAINER_SCORE: parseFloat(responsiveMaintainerResult.toFixed(5)),
+                        LICENSE_SCORE: parseFloat(licenseCheckResult.toFixed(5))
+                    };
+                    jsonOutput = JSON.stringify(output);
+                    // Log the JSON output
+                    console.log(jsonOutput);
+                    return [3 /*break*/, 9];
+                case 8:
+                    error_1 = _c.sent();
+                    winston.error("Error processing URL ".concat(repoUrl, ": ").concat(error_1));
+                    process.exit(1); // Exit with a failure status code (1) on error
+                    return [3 /*break*/, 9];
+                case 9: return [2 /*return*/];
             }
         });
     });
 }
-function processAndCalculateScoresForUrls(filePath) {
+function processAndCalculateScoresForUrls(filePath, outputStream) {
     return __awaiter(this, void 0, void 0, function () {
-        var urls, _i, urls_1, repoUrl_1, error_2;
+        var urls, _i, urls_1, repoUrl, result, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -166,18 +226,24 @@ function processAndCalculateScoresForUrls(filePath) {
                     _a.label = 2;
                 case 2:
                     if (!(_i < urls_1.length)) return [3 /*break*/, 5];
-                    repoUrl_1 = urls_1[_i];
-                    return [4 /*yield*/, fetchDataAndCalculateScore(repoUrl_1)];
+                    repoUrl = urls_1[_i];
+                    return [4 /*yield*/, fetchDataAndCalculateScore(repoUrl)];
                 case 3:
-                    _a.sent();
+                    result = _a.sent();
+                    // Format the result as NDJSON and write it to the output stream
+                    outputStream.write(JSON.stringify(result) + '\n');
                     _a.label = 4;
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
-                case 5: return [3 /*break*/, 7];
+                case 5:
+                    // All URLs processed successfully, exit with a success status code (0)
+                    process.exit(0);
+                    return [3 /*break*/, 7];
                 case 6:
                     error_2 = _a.sent();
                     console.error('Error processing URLs or calculating scores:', error_2);
+                    process.exit(1); // Exit with a failure status code (1) on error
                     return [3 /*break*/, 7];
                 case 7: return [2 /*return*/];
             }
@@ -186,51 +252,94 @@ function processAndCalculateScoresForUrls(filePath) {
 }
 var filePath = process.argv[2];
 if (!filePath) {
-    console.error("No file path provided.");
-    process.exit(1);
+    process.exit(1); // Exit with a failure status code (1) when no file path is provided
 }
-processAndCalculateScoresForUrls(filePath);
-// Call the fetchDataAndCalculateScore function to initiate the integration
-// Call the fetchDataAndCalculateScore function to initiate the integration
-// fetchDataAndCalculateScore();
+// Create a writable stream for NDJSON output
+var outputStream = fs.createWriteStream('output.ndjson');
+// Write the NDJSON header
+outputStream.write('[');
+// Process URLs and write NDJSON output
+processAndCalculateScoresForUrls(filePath, outputStream);
+// Handle the end of NDJSON data and close the output stream
+outputStream.on('finish', function () {
+    // Close the NDJSON array
+    fs.appendFileSync('output.ndjson', ']');
+    process.exit(0);
+});
+// Define a function to parse GitHub repository URL
+function parseGitHubUrl(url) {
+    var githubRegex = /github\.com\/([^/]+)\/([^/]+)/;
+    var match = url.match(githubRegex);
+    if (match && match.length === 3) {
+        var owner = match[1];
+        var repoName = match[2];
+        return { owner: owner, repoName: repoName };
+    }
+    else {
+        return null;
+    }
+}
 // Define a function to fetch and process issues data from the repository
 function fetchAndProcessIssues(repositoryUrl) {
     return __awaiter(this, void 0, void 0, function () {
-        var parts, owner_1, repo, response, issues, error_3;
+        var parts, owner, repo, response, issues, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
                     parts = repositoryUrl.split('/');
-                    owner_1 = parts[parts.length - 2];
+                    owner = parts[parts.length - 2];
                     repo = parts[parts.length - 1];
-                    return [4 /*yield*/, axios_1.default.get("https://api.github.com/repos/".concat(owner_1, "/").concat(repo, "/issues"))];
+                    return [4 /*yield*/, axios_1["default"].get("https://api.github.com/repos/".concat(owner, "/").concat(repo, "/issues"))];
                 case 1:
                     response = _a.sent();
                     issues = response.data.map(function (issue) { return ({
                         isBug: issue.labels.some(function (label) { return label.name === 'bug'; }),
-                        status: issue.state,
+                        status: issue.state
                     }); });
                     return [2 /*return*/, issues];
                 case 2:
                     error_3 = _a.sent();
-                    console.error('Error fetching or processing issues:', error_3);
                     return [2 /*return*/, []]; // Return an empty array in case of an error
                 case 3: return [2 /*return*/];
             }
         });
     });
 }
-function parseGitHubUrl(url) {
-    var githubRegex = /github\.com\/([^/]+)\/([^/]+)/;
-    var match = url.match(githubRegex);
-    if (match && match.length === 3) {
-        var owner_2 = match[1];
-        var repoName_1 = match[2];
-        return { owner: owner_2, repoName: repoName_1 };
+// Function to extract the npm package name from an npm link
+function extractPackageNameFromNpmLink(npmLink) {
+    var npmLinkRegex = /www\.npmjs\.com\/package\/([^/]+)/;
+    var match = npmLink.match(npmLinkRegex);
+    if (match && match.length === 2) {
+        return match[1];
     }
     else {
-        console.error('Invalid GitHub URL');
         return null;
     }
+}
+// Function to fetch GitHub repository information from an npm package name
+function getGitHubRepoFromNpm(packageName) {
+    return __awaiter(this, void 0, void 0, function () {
+        var response, packageData, repositoryUrl, githubUrl, error_4;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, axios_1["default"].get("https://registry.npmjs.org/".concat(packageName))];
+                case 1:
+                    response = _a.sent();
+                    packageData = response.data;
+                    if (packageData.repository && packageData.repository.url) {
+                        repositoryUrl = packageData.repository.url;
+                        githubUrl = repositoryUrl.replace(/^git\+/, '').replace(/\.git$/, '');
+                        return [2 /*return*/, githubUrl];
+                    }
+                    return [2 /*return*/, null];
+                case 2:
+                    error_4 = _a.sent();
+                    return [2 /*return*/, null];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
 }
