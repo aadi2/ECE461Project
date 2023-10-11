@@ -10,6 +10,6 @@ __pycache__/
 
 # files
 package-lock.json
-checker.py
-helper.py
+# checker.py
+# helper.py
 output.ndjson
