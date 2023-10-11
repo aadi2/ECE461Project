@@ -13,7 +13,7 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import proxyquire from 'proxyquire';
 
-const { getInfo, processUrls } = proxyquire('./../src/parser', {
+const { getInfo, processUrls } = proxyquire('./parser', {
   fs: {
     readFile: (filePath: string, encoding: string, callback: (err: NodeJS.ErrnoException | null, data: string) => void) => {
       callback(null, 'dummy file content');
