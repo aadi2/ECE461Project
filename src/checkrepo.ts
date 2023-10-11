@@ -37,7 +37,7 @@ async function fetchGitHubRepositoryInfo() {
     console.log(`Days Since Last Commit: ${daysSinceLastCommit}`);
     console.log(`README.md Text:\n${readmeText}`);
   } catch (error) {
-    console.error('Error fetching repository info:', error.message);
+    console.error('Error fetching repository info:', error);
   }
 }
 
