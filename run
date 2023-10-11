@@ -77,13 +77,13 @@ case $COMMAND in
         fi
 
         # Compile the TypeScript file and check for errors
-        tsc main.ts
+        tsc src/main.ts
         if [ $? -ne 0 ]; then
             exit 1
         fi
 
         # Run the compiled JavaScript file
-        node main.js "$COMMAND"
+        node dist/main.js "$COMMAND"
         ;;
 
 esac
