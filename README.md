@@ -1,6 +1,10 @@
-# ECE461Project
+# ECE 461 Software Engineering Project - A Trustworthy Module Registry
 
-AUTHORS: Aadi Aggarwal, Vaibhav Turaga, Ferati Ogunwemimo, Alisher Sultansikhov
+This repository contains the code for the Phase 2 project for ECE 461 Software Engineering - Fall 2023 Team 14.
+
+AUTHORS: Hunter Gruler, Ben Boardley, Julian Kang, Nathaniel Bielanski
+
+This repository is under construction and no guarantees are made on the accuracy of the contents of this repository.
 
 ## Usage
 
