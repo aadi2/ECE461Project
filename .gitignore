@@ -1,11 +1,14 @@
 .env
-package-lock.json
+
+# folders
 node_modules/
 coverage/
 logs/
+__pycache__/
+.nyc_output/
+
+# files
 package-lock.json
 checker.py
 helper.py
 output.ndjson
-.nyc_output
-__pycache__/
