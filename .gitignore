@@ -8,3 +8,4 @@ checker.py
 helper.py
 output.ndjson
 .nyc_output
+__pycache__/
