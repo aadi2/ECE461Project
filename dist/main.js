@@ -56,10 +56,10 @@ if (!process.env.GITHUB_TOKEN) {
 if (!process.env.LOG_FILE) {
     process.exit(1);
 }
-const logLevel = parseInt(process.env.LOG_LEVEL);
+const logLevel = parseInt(process.env.LOG_LEVEL); // logLevel is a defined after line 30
 // Configure Winston to use a log file and set log level based on environment variables
 winston.configure({
-    level: logLevel === 0 ? 'error' : logLevel === 1 ? 'info' : 'debug',
+    level: logLevel === 0 ? 'error' : (logLevel === 1 ? 'info' : 'debug'),
     format: winston.format.json(),
     transports: [
         new winston.transports.File({ filename: process.env.LOG_FILE }), // Log to a file
@@ -124,10 +124,14 @@ function fetchDataAndCalculateScore(inputUrl) {
         // Create or clear the local repository directory
         createOrClearDirectory(localRepositoryDirectory);
         winston.info(`Processing URL: ${repoUrl}`);
-        const { owner, repoName } = parseGitHubUrl(repoUrl);
+        const parsedURL = parseGitHubUrl(repoUrl);
+        if (parsedURL == null) {
+            winston.error(`Invalid GitHub URL: ${repoUrl}`);
+            process.exit(1);
+        }
         // Read GraphQL queries from queries.txt
         const queries = `query {
-    repository(owner: "${owner}", name: "${repoName}") {
+    repository(owner: "${parsedURL.owner}", name: "${parsedURL.repoName}") {
       defaultBranchRef {
         target {
           ... on Commit {
