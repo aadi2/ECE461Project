@@ -12,7 +12,7 @@ const fs = require('fs');
 const chai = require('chai');
 const expect = chai.expect;
 const sinon = require('sinon');
-const { getInfo, processUrls } = require('./parser');
+const { getInfo, processUrls } = require('../src/parser');
 
 describe('parser.js', () => {
   describe('getInfo', () => {
