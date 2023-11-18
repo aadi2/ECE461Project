@@ -30,29 +30,44 @@ class Logger {
       process.exit(1);
     }
 
-    const customFormat = winston.format.printf(({ message }) => message);
+    const customFormat = winston.format.printf(({ timestamp, message }) => {
+      return `${timestamp} ${message}`;
+    });
+
+    const fileTransportOptions: winston.transports.FileTransportOptions = {
+      filename: this.logFileName,
+    };
 
     this.loggerMain = winston.createLogger({
       level: this.logLevel >= LogLevel.Info ? 'info' : 'silent',
-      format: customFormat,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        customFormat
+      ),
       transports: [
-        new winston.transports.File({ filename: this.logFileName }),
+        new winston.transports.File({ ...fileTransportOptions, format: customFormat }),
       ],
     });
 
     this.loggerDebug = winston.createLogger({
       level: 'debug',
-      format: customFormat,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        customFormat
+      ),
       transports: [
-        new winston.transports.File({ filename: this.logFileName }),
+        new winston.transports.File({ ...fileTransportOptions, format: customFormat }),
       ],
     });
 
     this.loggerError = winston.createLogger({
       level: 'error',
-      format: customFormat,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        customFormat
+      ),
       transports: [
-        new winston.transports.File({ filename: this.logFileName }),
+        new winston.transports.File({ ...fileTransportOptions, format: customFormat }),
       ],
     });
   }
@@ -80,7 +95,7 @@ class Logger {
    * @param {string} message - The debug message to log.
    */
   debug(message: string): void {
-      console.log(message);
+    console.log(message);
     if (this.logLevel >= LogLevel.Debug) {
       this.loggerDebug.debug(message);
     }
@@ -91,7 +106,7 @@ class Logger {
    * @param {string} message - The information message to log.
    */
   info(message: string): void {
-      console.log(message);
+    console.log(message);
     if (this.logLevel >= LogLevel.Info) {
       this.loggerMain.info(message);
     }
@@ -102,7 +117,7 @@ class Logger {
    * @param {string} message - The warning message to log.
    */
   warn(message: string): void {
-      console.log(message);
+    console.log(message);
     if (this.logLevel >= LogLevel.Info) {
       this.loggerMain.warn(message);
     }
