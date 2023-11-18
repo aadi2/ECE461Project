@@ -41,7 +41,7 @@ class Logger {
     this.loggerMain = winston.createLogger({
       level: this.logLevel >= LogLevel.Info ? 'info' : 'silent',
       format: winston.format.combine(
-        winston.format.timestamp(),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSSZZ' }), // Use the custom format with timezone information
         customFormat
       ),
       transports: [
@@ -52,7 +52,7 @@ class Logger {
     this.loggerDebug = winston.createLogger({
       level: 'debug',
       format: winston.format.combine(
-        winston.format.timestamp(),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSSZZ' }), // Use the custom format with timezone information
         customFormat
       ),
       transports: [
@@ -63,7 +63,7 @@ class Logger {
     this.loggerError = winston.createLogger({
       level: 'error',
       format: winston.format.combine(
-        winston.format.timestamp(),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSSZZ' }), // Use the custom format with timezone information
         customFormat
       ),
       transports: [
